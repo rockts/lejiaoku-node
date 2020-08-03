@@ -4,7 +4,7 @@ import { TypeModel } from './type.model';
 /**
  * 创建分类
  */
-export const createTag = async (type: TypeModel) => {
+export const createType = async (type: TypeModel) => {
   // 准备查询
   const statement = `
     INSERT INTO type

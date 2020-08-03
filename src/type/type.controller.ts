@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createTag, getTypeByName } from './type.service';
+import { createType, getTypeByName } from './type.service';
 
 /**
  * 创建分类
@@ -20,7 +20,7 @@ export const store = async (
     if (type) throw new Error('TYPE_ALREADY_EXISTS');
 
     // 存储分类
-    const data = await createTag({ name });
+    const data = await createType({ name });
 
     // 做出响应
     response.status(201).send(data);
