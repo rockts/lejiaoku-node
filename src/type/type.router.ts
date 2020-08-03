@@ -7,7 +7,7 @@ const router = express.Router();
 /**
  * 创建标签
  */
-router.post('/tags', authGuard, tagController.store);
+router.post('/types', authGuard, tagController.store);
 
 /**
  * 导出路由

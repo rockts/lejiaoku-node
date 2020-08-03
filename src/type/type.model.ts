@@ -1,4 +1,4 @@
-export class TagModel {
+export class TypeModel {
   id?: number;
   name?: string;
 }
