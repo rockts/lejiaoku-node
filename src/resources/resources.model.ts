@@ -1,4 +1,4 @@
-export class PostModel {
+export class ResourcesModel {
   id?: number;
   title?: string;
   description?: string;

@@ -1,8 +1,8 @@
 import { TokenPayload } from '../src/auth/auth.interface';
 import {
-  GetPostsOptionsFilter,
-  GetPostsOptionsPagination,
-} from '../src/post/post.service';
+  GetResourcesOptionsFilter,
+  GetResourcesOptionsPagination,
+} from '../src/resources/resources.service';
 
 declare global {
   namespace Express {
@@ -10,8 +10,8 @@ declare global {
       user: TokenPayload;
       fileMetaData: { width?: number; height?: number; metadata?: {} };
       sort: string;
-      filter: GetPostsOptionsFilter;
-      pagination: GetPostsOptionsPagination;
+      filter: GetResourcesOptionsFilter;
+      pagination: GetResourcesOptionsPagination;
     }
   }
 }

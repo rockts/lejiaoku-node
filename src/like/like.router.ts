@@ -7,15 +7,19 @@ const router = express.Router();
 /**
  * 点赞内容
  */
-router.post('/posts/:postId/like', authGuard, likeController.storeUserLikePost);
+router.post(
+  '/resources/:resourcesId/like',
+  authGuard,
+  likeController.storeUserLikeResources,
+);
 
 /**
  * 取消点赞内容
  */
 router.delete(
-  '/posts/:postId/like',
+  '/resources/:resourcesId/like',
   authGuard,
-  likeController.destroyUserLikePost,
+  likeController.destroyUserLikeResources,
 );
 
 /**

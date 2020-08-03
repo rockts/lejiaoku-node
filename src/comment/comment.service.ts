@@ -2,8 +2,8 @@ import { connection } from '../app/database/mysql';
 import { CommentModel } from './comment.model';
 import { sqlFragment } from './comment.provider';
 import {
-  GetPostsOptionsFilter,
-  GetPostsOptionsPagination,
+  GetResourcesOptionsFilter,
+  GetResourcesOptionsPagination,
 } from '../resources/resources.service';
 
 /**
@@ -82,8 +82,8 @@ export const deleteComment = async (commentId: number) => {
  * 获取评论列表
  */
 interface GetCommentsOptions {
-  filter?: GetPostsOptionsFilter;
-  pagination?: GetPostsOptionsPagination;
+  filter?: GetResourcesOptionsFilter;
+  pagination?: GetResourcesOptionsPagination;
 }
 
 export const getComments = async (options: GetCommentsOptions) => {
