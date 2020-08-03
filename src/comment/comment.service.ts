@@ -4,7 +4,7 @@ import { sqlFragment } from './comment.provider';
 import {
   GetPostsOptionsFilter,
   GetPostsOptionsPagination,
-} from '../post/post.service';
+} from '../resources/resources.service';
 
 /**
  * 创建评论
