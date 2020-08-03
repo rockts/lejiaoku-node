@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { createTag, getTagByName } from './type.service';
+import { createTag, getTypeByName } from './type.service';
 
 /**
- * 创建标签
+ * 创建分类
  */
 export const store = async (
   request: Request,
@@ -13,13 +13,13 @@ export const store = async (
   const { name } = request.body;
 
   try {
-    // 查找标签
-    const tag = await getTagByName(name);
+    // 查找分类
+    const type = await getTypeByName(name);
 
-    // 如果标签存在就报错
-    if (tag) throw new Error('TAG_ALREADY_EXISTS');
+    // 如果分类存在就报错
+    if (type) throw new Error('TYPE_ALREADY_EXISTS');
 
-    // 存储标签
+    // 存储分类
     const data = await createTag({ name });
 
     // 做出响应
