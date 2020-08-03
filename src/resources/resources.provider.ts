@@ -11,7 +11,7 @@ export const sqlFragment = {
   `,
   leftJoinUser: `
     LEFT JOIN user
-      ON user.id = post.userId
+      ON user.id = resources.userId
     LEFT JOIN avatar
       ON user.id = avatar.userId
   `,
@@ -22,17 +22,17 @@ export const sqlFragment = {
       FROM
         comment
       WHERE
-        comment.postId = post.id
+        comment.resourcesId = resources.id
     ) as totalComments
   `,
   leftJoinOneFile: `
     LEFT JOIN LATERAL (
       SELECT *
       FROM file
-      WHERE file.postId = post.id
+      WHERE file.resourcesId = resources.id
       ORDER BY file.id DESC
       LIMIT 1
-    ) AS file ON post.id = file.postId
+    ) AS file ON resourcesid = file.resourcesId
   `,
   file: `
     CAST(
@@ -51,9 +51,9 @@ export const sqlFragment = {
   `,
   leftJoinTag: `
     LEFT JOIN
-      post_tag ON post_tag.postId = post.id
+    resources_tag ON resources_tag.resourcesId = resources.id
     LEFT JOIN
-      tag ON post_tag.tagId = tag.id
+      tag ON resources_tag.tagId = tag.id
   `,
   tags: `
     CAST(
@@ -75,13 +75,13 @@ export const sqlFragment = {
   `,
   totalLikes: `
     (
-      SELECT COUNT(user_like_post.postId)
-      FROM user_like_post
-      WHERE user_like_post.postId = post.id
+      SELECT COUNT(user_like_resources.resourcesId)
+      FROM user_like_resources
+      WHERE user_like_resources.resourcesId = resources.id
     ) AS totalLikes
   `,
-  innerJoinUserLikePost: `
-    INNER JOIN user_like_post
-      ON user_like_post.postId = post.id
+  innerJoinUserLikeResources: `
+    INNER JOIN user_like_resources
+      ON user_like_resources.resourcesId = resources.id
   `,
 };

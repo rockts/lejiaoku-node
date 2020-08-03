@@ -1,5 +1,5 @@
 import express from 'express';
-import * as postController from './resources.controller';
+import * as resourcesController from './resources.controller';
 import { authGuard, accessControl } from '../auth/auth.middleware';
 import { sort, filter, paginate } from './resources.middleware';
 import { POSTS_PER_PAGE } from '../app/app.config';
@@ -10,62 +10,62 @@ const router = express.Router();
  * 内容列表
  */
 router.get(
-  '/posts',
+  '/resources',
   sort,
   filter,
   paginate(POSTS_PER_PAGE),
-  postController.index,
+  resourcesController.index,
 );
 
 /**
  * 创建内容
  */
-router.post('/posts', authGuard, postController.store);
+router.post('/resources', authGuard, resourcesController.store);
 
 /**
  * 更新内容
  */
 router.patch(
-  '/posts/:postId',
+  '/resources/:resourcesId',
   authGuard,
   accessControl({ possession: true }),
-  postController.update,
+  resourcesController.update,
 );
 
 /**
  * 删除内容
  */
 router.delete(
-  '/posts/:postId',
+  '/resources/:resourcesId',
   authGuard,
   accessControl({ possession: true }),
-  postController.destroy,
+  resourcesController.destroy,
 );
 
 /**
  * 添加内容标签
  */
 router.post(
-  '/posts/:postId/tag',
+  '/resources/:resourcesId/tag',
   authGuard,
   accessControl({ possession: true }),
-  postController.storePostTag,
+  resourcesController.storeResourcesTag,
 );
 
 /**
  * 移除内容标签
  */
 router.delete(
-  '/posts/:postId/tag',
+  '/resources/:resourcesId/tag',
   authGuard,
   accessControl({ possession: true }),
-  postController.destroyPostTag,
+  resourcesController.destroyResourcesTag,
 );
 
 /**
  * 单个内容
  */
-router.get('/posts/:postId', postController.show);
+router.get('/resources/:resourcesId', resourcesController.show);
 
 /**
  * 导出路由
