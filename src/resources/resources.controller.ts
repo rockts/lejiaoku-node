@@ -10,7 +10,7 @@ import {
   deletePostTag,
   getPostsTotalCount,
   getPostById,
-} from './post.service';
+} from './resources.service';
 import { TagModel } from '../tag/tag.model';
 import { getTagByName, createTag } from '../tag/tag.service';
 

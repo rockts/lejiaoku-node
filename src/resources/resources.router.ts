@@ -1,7 +1,7 @@
 import express from 'express';
-import * as postController from './post.controller';
+import * as postController from './resources.controller';
 import { authGuard, accessControl } from '../auth/auth.middleware';
-import { sort, filter, paginate } from './post.middleware';
+import { sort, filter, paginate } from './resources.middleware';
 import { POSTS_PER_PAGE } from '../app/app.config';
 
 const router = express.Router();

@@ -1,6 +1,6 @@
 import { connection } from '../app/database/mysql';
-import { PostModel } from './post.model';
-import { sqlFragment } from './post.provider';
+import { PostModel } from './resources.model';
+import { sqlFragment } from './resources.provider';
 
 /**
  * 获取内容列表
