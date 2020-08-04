@@ -47,7 +47,7 @@ export const getResources = async (options: GetResourcesOptions) => {
       ${sqlFragment.file},
       ${sqlFragment.tags},
       ${sqlFragment.totalLikes}
-    FROM Resources
+    FROM resources
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
@@ -197,7 +197,7 @@ export const getResourcesTotalCount = async (options: GetResourcesOptions) => {
   const statement = `
     SELECT
       COUNT(DISTINCT resources.id) AS total
-    FROM Resources
+    FROM reesources
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}

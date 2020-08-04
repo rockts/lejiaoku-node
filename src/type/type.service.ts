@@ -2,6 +2,22 @@ import { connection } from '../app/database/mysql';
 import { TypeModel } from './type.model';
 
 /**
+ * 获取分类列表
+ */
+export const getType = async () => {
+  const statement = `
+    SELECT
+      id, name
+    FROM type
+   
+  `;
+
+  const [data] = await connection.promise().query(statement);
+
+  return data;
+};
+
+/**
  * 创建分类
  */
 export const createType = async (type: TypeModel) => {
@@ -68,4 +84,22 @@ export const deleteType = async (typeId: number) => {
 
   // 提供数据
   return data;
+};
+
+/**
+ * 统计内容数量
+ */
+export const getTypeTotalCount = async () => {
+  // 准备查询
+  const statement = `
+    SELECT
+      COUNT(DISTINCT type.id) AS total
+    FROM type
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement);
+
+  // 提供结果
+  return data[0].total;
 };

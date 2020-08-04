@@ -5,7 +5,35 @@ import {
   updateType,
   getTypeByName,
   deleteType,
+  getTypeTotalCount,
+  getType,
 } from './type.service';
+
+/**
+ * 分类列表
+ */
+export const index = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    // 统计分类数量
+    const totalCount = await getTypeTotalCount();
+
+    // 设置响应头部
+    response.header('X-Total-Count', totalCount);
+  } catch (error) {
+    next(error);
+  }
+
+  try {
+    const type = await getType();
+    response.send(type);
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * 创建分类

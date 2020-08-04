@@ -5,6 +5,11 @@ import { authGuard, accessControl } from '../auth/auth.middleware';
 const router = express.Router();
 
 /**
+ * 分类列表
+ */
+router.get('/types', typeController.index);
+
+/**
  * 创建分类
  */
 router.post('/types', authGuard, typeController.store);
