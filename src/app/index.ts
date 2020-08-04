@@ -10,6 +10,7 @@ import likeRouter from '../like/like.router';
 import appRouter from './app.router';
 import typeRouter from '../type/type.router';
 import subjectRouter from '../subject/subject.router';
+import gradeRouter from '../grade/grade.router';
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -37,6 +38,7 @@ app.use(
   appRouter,
   typeRouter,
   subjectRouter,
+  gradeRouter,
 );
 
 /**

@@ -71,6 +71,14 @@ export const defaultErrorHandler = (
       statusCode = 400;
       message = '分类已存在';
       break;
+    case 'SUBJECT_ALREADY_EXISTS':
+      statusCode = 400;
+      message = '年级已存在';
+      break;
+    case 'GRADE_ALREADY_EXISTS':
+      statusCode = 400;
+      message = '年级已存在';
+      break;
     case 'POST_ALREADY_HAS_THIS_TAG':
       statusCode = 400;
       message = '内容已经有这个标签了';
