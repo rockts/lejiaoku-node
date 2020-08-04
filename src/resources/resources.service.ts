@@ -82,7 +82,7 @@ export const createResources = async (resources: ResourcesModel) => {
 };
 
 /**
- * 更新内容
+ * 更新资源
  */
 export const updateResources = async (
   resourcesId: number,

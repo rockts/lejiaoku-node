@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createType, getTypeByName } from './type.service';
+import _ from 'lodash';
+import { createType, updateType, getTypeByName } from './type.service';
 
 /**
  * 创建分类
@@ -24,6 +25,29 @@ export const store = async (
 
     // 做出响应
     response.status(201).send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 更新分类
+ */
+export const update = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 准备数据
+  const { typeId } = request.params;
+  const type = _.pick(request.body, ['name']);
+
+  // 更新
+  try {
+    const data = await updateType(parseInt(`${typeId}`, 10), type);
+
+    // 做出响应
+    response.send(data);
   } catch (error) {
     next(error);
   }

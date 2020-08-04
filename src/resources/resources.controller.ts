@@ -13,7 +13,6 @@ import {
 } from './resources.service';
 import { TagModel } from '../tag/tag.model';
 import { getTagByName, createTag } from '../tag/tag.service';
-
 /**
  * 内容列表
  */
@@ -47,7 +46,7 @@ export const index = async (
 };
 
 /**
- * 创建内容
+ * 创建资源
  */
 export const store = async (
   request: Request,
@@ -68,7 +67,7 @@ export const store = async (
 };
 
 /**
- * 更新内容
+ * 更新资源
  */
 export const update = async (
   request: Request,
@@ -79,14 +78,11 @@ export const update = async (
   const { resourcesId } = request.params;
 
   // 准备数据
-  const resourcespost = _.pick(request.body, ['title', 'description']);
+  const resources = _.pick(request.body, ['title', 'description']);
 
   // 更新
   try {
-    const data = await updateResources(
-      parseInt(resourcesId, 10),
-      resourcespost,
-    );
+    const data = await updateResources(parseInt(resourcesId, 10), resources);
     response.send(data);
   } catch (error) {
     next(error);
