@@ -1,13 +1,23 @@
 import express from 'express';
-import * as tagController from './type.controller';
-import { authGuard } from '../auth/auth.middleware';
+import * as typeController from './type.controller';
+import { authGuard, accessControl } from '../auth/auth.middleware';
 
 const router = express.Router();
 
 /**
- * 创建标签
+ * 创建分类
  */
-router.post('/types', authGuard, tagController.store);
+router.post('/types', authGuard, typeController.store);
+
+/**
+ * 更新分类
+ */
+router.patch(
+  '/types/:typeId',
+  authGuard,
+  accessControl({ possession: true }),
+  typeController.update,
+);
 
 /**
  * 导出路由

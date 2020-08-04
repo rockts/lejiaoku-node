@@ -34,3 +34,21 @@ export const getTypeByName = async (typeName: string) => {
   // 提供数据
   return data[0];
 };
+
+/**
+ * 更新分类
+ */
+export const updateType = async (typeId: number, type: TypeModel) => {
+  // 准备数据
+  const statement = `
+    UPDATE type
+    SET ?
+    WHERE id = ?
+  `;
+
+  // 执行
+  const [data] = await connection.promise().query(statement, [type, typeId]);
+
+  // 提供数据
+  return data;
+};
