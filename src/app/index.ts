@@ -9,6 +9,7 @@ import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
 import appRouter from './app.router';
 import typeRouter from '../type/type.router';
+import subjectRouter from '../subject/subject.router';
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -35,6 +36,7 @@ app.use(
   likeRouter,
   appRouter,
   typeRouter,
+  subjectRouter,
 );
 
 /**
