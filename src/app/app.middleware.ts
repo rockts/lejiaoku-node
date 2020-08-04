@@ -73,7 +73,7 @@ export const defaultErrorHandler = (
       break;
     case 'SUBJECT_ALREADY_EXISTS':
       statusCode = 400;
-      message = '年级已存在';
+      message = '学科已存在';
       break;
     case 'GRADE_ALREADY_EXISTS':
       statusCode = 400;

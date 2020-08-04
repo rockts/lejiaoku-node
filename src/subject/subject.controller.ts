@@ -51,7 +51,7 @@ export const store = async (
     const subject = await getSubjectByName(name);
 
     // 如果学科存在就报错
-    if (subject) throw new Error('SUBJECT_ALREADY_EXIST');
+    if (subject) throw new Error('SUBJECT_ALREADY_EXISTS');
 
     // 存储学科
     const data = await createSubject({ name });
