@@ -9,7 +9,7 @@ export const getType = async () => {
     SELECT
       id, name
     FROM type
-   
+    ORDER BY id ASC
   `;
 
   const [data] = await connection.promise().query(statement);
