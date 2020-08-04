@@ -10,7 +10,7 @@ import {
 } from './subject.service';
 
 /**
- * 分类列表
+ * 学科列表
  */
 export const index = async (
   request: Request,
@@ -18,7 +18,7 @@ export const index = async (
   next: NextFunction,
 ) => {
   try {
-    // 统计分类数量
+    // 统计学科数量
     const totalCount = await getSubjectTotalCount();
 
     // 设置响应头部
@@ -36,7 +36,7 @@ export const index = async (
 };
 
 /**
- * 创建分类
+ * 创建学科
  */
 export const store = async (
   request: Request,
@@ -47,13 +47,13 @@ export const store = async (
   const { name } = request.body;
 
   try {
-    // 查找分类
+    // 查找学科
     const subject = await getSubjectByName(name);
 
-    // 如果分类存在就报错
-    if (subject) throw new Error('TYPE_ALREADY_EXISTS');
+    // 如果学科存在就报错
+    if (subject) throw new Error('SUBJECT_ALREADY_EXIST');
 
-    // 存储分类
+    // 存储学科
     const data = await createSubject({ name });
 
     // 做出响应
@@ -64,7 +64,7 @@ export const store = async (
 };
 
 /**
- * 更新分类
+ * 更新学科
  */
 export const update = async (
   request: Request,
@@ -75,7 +75,7 @@ export const update = async (
   const { subjectId } = request.params;
   const subject = _.pick(request.body, ['name']);
 
-  // 更新分类
+  // 更新学科
   try {
     const data = await updateSubject(parseInt(`${subjectId}`, 10), subject);
 
@@ -87,7 +87,7 @@ export const update = async (
 };
 
 /**
- * 删除分类
+ * 删除学科
  */
 export const destroy = async (
   request: Request,
@@ -97,7 +97,7 @@ export const destroy = async (
   // 准备数据
   const { subjectId } = request.params;
 
-  // 删除分类
+  // 删除学科
   try {
     const data = await deleteSubject(parseInt(subjectId, 10));
 
