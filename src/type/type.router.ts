@@ -20,6 +20,16 @@ router.patch(
 );
 
 /**
+ *  删除分类
+ */
+router.delete(
+  '/types/:typeId',
+  authGuard,
+  accessControl({ possession: true }),
+  typeController.destroy,
+);
+
+/**
  * 导出路由
  */
 export default router;

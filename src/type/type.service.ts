@@ -52,3 +52,20 @@ export const updateType = async (typeId: number, type: TypeModel) => {
   // 提供数据
   return data;
 };
+
+/**
+ * 删除分类
+ */
+export const deleteType = async (typeId: number) => {
+  // 准备数据
+  const statement = `
+    DELETE FROM type
+    WHERE id = ?
+  `;
+
+  // 执行
+  const [data] = await connection.promise().query(statement, typeId);
+
+  // 提供数据
+  return data;
+};
