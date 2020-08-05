@@ -21,21 +21,21 @@ export const createCover = async (cover: CoverModel) => {
 };
 
 /**
-//  * 按 ID 查找文件
-//  */
-// export const findCoverById = async (CoverId: number) => {
-//   // 准备查询
-//   const statement = `
-//     SELECT * FROM cover
-//     WHERE id = ?
-//   `;
+ * 按 ID 查找文件
+ */
+export const findCoverById = async (CoverId: number) => {
+  // 准备查询
+  const statement = `
+    SELECT * FROM cover
+    WHERE id = ?
+  `;
 
-//   // 执行查询
-//   const [data] = await connection.promise().query(statement, CoverId);
+  // 执行查询
+  const [data] = await connection.promise().query(statement, CoverId);
 
-//   // 提供数据
-//   return data[0];
-// };
+  // 提供数据
+  return data[0];
+};
 
 // /**
 //  * 调整图像尺寸
