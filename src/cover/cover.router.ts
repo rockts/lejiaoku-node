@@ -21,10 +21,10 @@ router.post(
  */
 router.get('/covers/:coverId/serve', coverController.serve);
 
-// /**
-//  * 文件信息
-//  */
-// router.get('/covers/:coverId/metadata', coverController.metadata);
+/**
+ * 文件信息
+ */
+router.get('/covers/:coverId/metadata', coverController.metadata);
 
 /**
  * 导出路由
