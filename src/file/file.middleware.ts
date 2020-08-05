@@ -73,7 +73,6 @@ export const fileProcessor = async (
   request.fileMetaData = {
     width: imageSize.width,
     height: imageSize.height,
-    metadata: JSON.stringify(tags),
   };
 
   // 调整图像尺寸

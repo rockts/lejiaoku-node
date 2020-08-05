@@ -18,25 +18,21 @@ export const store = async (
   // 所属内容
   const { resources: resourcesId } = request.query;
 
-  // 文件信息
-  const coverInfo = _.pick(request.file, [
-    'originalname',
-    'mimetype',
-    'covername',
-    'size',
-  ]);
-
   try {
     // 保存文件信息
     const data = await createCover({
-      ...coverInfo,
       userId,
+      originalname: request.file.originalname,
+      mimetype: request.file.mimetype,
+      size: request.file.size,
+      covername: request.file.filename,
       resourcesId,
       ...request.fileMetaData,
     });
 
     // 做出响应
     response.status(201).send(data);
+    console.log(data);
   } catch (error) {
     next(error);
   }
