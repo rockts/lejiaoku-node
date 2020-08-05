@@ -33,7 +33,7 @@ export const store = async (
       ...coverInfo,
       userId,
       resourcesId,
-      //     // ...request.fileMetaData,
+      ...request.fileMetaData,
     });
     // 做出响应
     response.status(201).send(data);

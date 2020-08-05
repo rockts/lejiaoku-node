@@ -43,35 +43,35 @@ export const coverInterceptor = coverUpload.single('file');
 /**
  * 文件处理器
  */
-// export const coverProcessor = async (
-//   request: Request,
-//   response: Response,
-//   next: NextFunction,
-// ) => {
-//   // 文件路径
-//   const { path } = request.file;
+export const coverProcessor = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 文件路径
+  const { path } = request.file;
 
-//   let image: Jimp;
+  let image: Jimp;
 
-//   try {
-//     // 读取图像文件
-//     image = await Jimp.read(path);
-//   } catch (error) {
-//     return next(error);
-//   }
+  try {
+    // 读取图像文件
+    image = await Jimp.read(path);
+  } catch (error) {
+    return next(error);
+  }
 
-//   // 准备文件数据
-//   const { imageSize, tags } = image['_exif'];
+  // 准备文件数据
+  const { width, height } = image['bitmap'];
 
-//   // 在请求中添加文件数据
-//   request.fileMetaData = {
-//     width: imageSize.width,
-//     height: imageSize.height,
-//   };
+  // 在请求中添加文件数据
+  request.fileMetaData = {
+    width: width,
+    height: height,
+  };
 
-//   // 调整图像尺寸
-//   imageResizer(image, request.file);
+  //   // 调整图像尺寸
+  //   imageResizer(image, request.file);
 
-//   // 下一步
-//   next();
-// };
+  // 下一步
+  next();
+};
