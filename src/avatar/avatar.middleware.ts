@@ -2,12 +2,16 @@ import path from 'path';
 import Jimp from 'jimp';
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import { fileFilter } from '../file/file.middleware';
+import { coverFilter } from '../cover/cover.middleware';
 
 /**
  * 文件过滤器
  */
-const avatarUploadFilter = fileFilter(['image/png', 'image/jpg', 'image/jpeg']);
+const avatarUploadFilter = coverFilter([
+  'image/png',
+  'image/jpg',
+  'image/jpeg',
+]);
 
 /**
  * 创建一个 Multer

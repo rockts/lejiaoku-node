@@ -59,9 +59,9 @@ export const defaultErrorHandler = (
       statusCode = 403;
       message = '您不能处理这个内容';
       break;
-    case 'FILE_NOT_FOUND':
+    case 'COVER_NOT_FOUND':
       statusCode = 404;
-      message = '文件不存在';
+      message = '封面不存在';
       break;
     case 'TAG_ALREADY_EXISTS':
       statusCode = 400;
@@ -95,7 +95,7 @@ export const defaultErrorHandler = (
       statusCode = 400;
       message = '无法回复这条评论';
       break;
-    case 'FILE_TYPE_NOT_ACCEPT':
+    case 'COVER_TYPE_NOT_ACCEPT':
       statusCode = 400;
       message = '不能上传此类型文件';
       break;
