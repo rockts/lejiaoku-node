@@ -37,37 +37,37 @@ export const findCoverById = async (CoverId: number) => {
   return data[0];
 };
 
-// /**
-//  * 调整图像尺寸
-//  */
-// export const imageResizer = async (image: Jimp, cover: Express.Multer.File) => {
-//   // 图像尺寸
-//   const { imageSize } = image['_exif'];
+/**
+ * 调整图像尺寸
+ */
+export const imageResizer = async (image: Jimp, cover: Express.Multer.File) => {
+  // 图像尺寸
+  const { width, height } = image['bitmap'];
 
-//   // 文件路径
-//   const CoverPath = path.join(cover.destination, 'resized', cover.filename);
+  // 文件路径
+  const CoverPath = path.join(cover.destination, 'resized', cover.filename);
 
-//   // 大尺寸
-//   if (imageSize.width > 1280) {
-//     image
-//       .resize(1280, Jimp.AUTO)
-//       .quality(85)
-//       .write(`${CoverPath}-large`);
-//   }
+  // 大尺寸
+  if (width > 1280) {
+    image
+      .resize(1280, Jimp.AUTO)
+      .quality(85)
+      .write(`${CoverPath}-large`);
+  }
 
-//   // 中等尺寸
-//   if (imageSize.width > 640) {
-//     image
-//       .resize(640, Jimp.AUTO)
-//       .quality(85)
-//       .write(`${CoverPath}-medium`);
-//   }
+  // 中等尺寸
+  if (width > 640) {
+    image
+      .resize(640, Jimp.AUTO)
+      .quality(85)
+      .write(`${CoverPath}-medium`);
+  }
 
-//   // 缩略图
-//   if (imageSize.width > 320) {
-//     image
-//       .resize(320, Jimp.AUTO)
-//       .quality(85)
-//       .write(`${CoverPath}-thumbnail`);
-//   }
-// };
+  // 缩略图
+  if (width > 320) {
+    image
+      .resize(320, Jimp.AUTO)
+      .quality(85)
+      .write(`${CoverPath}-thumbnail`);
+  }
+};

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import Jimp from 'jimp';
-// import { imageResizer } from './cover.service';
+import { imageResizer } from './cover.service';
 
 // /**
 //  * 文件过滤器
@@ -69,8 +69,8 @@ export const coverProcessor = async (
     height: height,
   };
 
-  //   // 调整图像尺寸
-  //   imageResizer(image, request.file);
+  // 调整图像尺寸
+  imageResizer(image, request.file);
 
   // 下一步
   next();
