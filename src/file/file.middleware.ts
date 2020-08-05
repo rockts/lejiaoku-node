@@ -25,7 +25,12 @@ export const fileFilter = (fileTypes: Array<string>) => {
   };
 };
 
-const fileUploadFilter = fileFilter(['image/png', 'image/jpg', 'image/jpeg']);
+const fileUploadFilter = fileFilter([
+  'image/png',
+  'image/jpg',
+  'image/jpeg',
+  'application/msword',
+]);
 
 /**
  * 创建一个 Multer
