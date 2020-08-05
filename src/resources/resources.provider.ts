@@ -12,7 +12,36 @@ export const sqlFragment = {
     LEFT JOIN grade
       ON grade.id = resources.gradeId
   `,
-
+  type: `
+    JSON_OBJECT(
+      'id', type.id,
+      'name', type.name
+    ) as type
+  `,
+  leftJoinType: `
+    LEFT JOIN type
+      ON type.id = resources.typeId
+  `,
+  subject: `
+    JSON_OBJECT(
+      'id', subject.id,
+      'name', subject.name
+    ) as subject
+  `,
+  leftJoinSuject: `
+    LEFT JOIN subject
+      ON subject.id = resources.subjectId
+  `,
+  version: `
+  JSON_OBJECT(
+    'id', version.id,
+    'name', version.name
+  ) as version
+  `,
+  leftJoinVersion: `
+  LEFT JOIN version
+    ON version.id = resources.versionId
+  `,
   user: `
     JSON_OBJECT(
       'id', user.id,
