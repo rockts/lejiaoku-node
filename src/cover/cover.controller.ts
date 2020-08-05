@@ -98,27 +98,27 @@ export const serve = async (
   }
 };
 
-// /**
-//  * 文件信息
-//  */
-// export const metadata = async (
-//   request: Request,
-//   response: Response,
-//   next: NextFunction,
-// ) => {
-//   // 文件 ID
-//   const { coverId } = request.params;
+/**
+ * 文件信息
+ */
+export const metadata = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 文件 ID
+  const { coverId } = request.params;
 
-//   try {
-//     // 查询文件数据
-//     const cover = await findCoverById(parseInt(coverId, 10));
+  try {
+    // 查询文件数据
+    const cover = await findCoverById(parseInt(coverId, 10));
 
-//     // 准备响应数据
-//     const data = _.pick(cover, ['id', 'size', 'width', 'height']);
+    // 准备响应数据
+    const data = _.pick(cover, ['id', 'size', 'width', 'height']);
 
-//     // 做出响应
-//     response.send(data);
-//   } catch (error) {
-//     next(error);
-//   }
-// }
+    // 做出响应
+    response.send(data);
+  } catch (error) {
+    next(error);
+  }
+};
