@@ -1,5 +1,5 @@
 export class CoverModel {
-  id?: string;
+  id?: number;
   originalname: string;
   mimetype: string;
   filename: string;

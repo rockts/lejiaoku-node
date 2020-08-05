@@ -2,7 +2,8 @@ import path from 'path';
 import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-// import { createCover } from './cover.service';
+import { createCover } from './cover.service';
+import { CoverModel } from './cover.model';
 
 /**
  * 上传文件
@@ -12,30 +13,33 @@ export const store = async (
   response: Response,
   next: NextFunction,
 ) => {
-  console.log(request.file);
-  response.sendStatus(200);
+  // 当前用户
+  const { id: userId } = request.user;
 
-  // // 当前用户
-  // const { id: userId } = request.user;
-  // // 所属内容
-  // const { resources: resourcesId } = request.query;
-  // try {
-  //   // 保存文件信息
-  //   const data = await createCover({
-  //     userId,
-  //     originalname: request.file.originalname,
-  //     mimetype: request.file.mimetype,
-  //     size: request.file.size,
-  //     filename: request.file.filename,
-  //     resourcesId,
-  //     // ...request.fileMetaData,
-  //   });
-  //   // 做出响应
-  //   response.status(201).send(data);
-  //   console.log(data);
-  // } catch (error) {
-  //   next(error);
-  // }
+  // 所属内容
+  const { resources: resourcesId } = request.query;
+
+  // 文件信息
+  const coverInfo = _.pick(request.file, [
+    'originalname',
+    'mimetype',
+    'filename',
+    'size',
+  ]);
+
+  try {
+    // 保存文件信息
+    const data = await createCover({
+      ...coverInfo,
+      userId,
+      resourcesId,
+      //     // ...request.fileMetaData,
+    });
+    // 做出响应
+    response.status(201).send(data);
+  } catch (error) {
+    next(error);
+  }
 };
 
 // /**
@@ -117,4 +121,4 @@ export const store = async (
 //   } catch (error) {
 //     next(error);
 //   }
-// };
+// }

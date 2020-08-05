@@ -3,22 +3,22 @@ import Jimp from 'jimp';
 import { connection } from '../app/database/mysql';
 import { CoverModel } from './cover.model';
 
-// /**
-//  * 存储文件信息
-//  */
-// export const createCover = async (cover: CoverModel) => {
-//   // 准备查询
-//   const statement = `
-//     INSERT INTO cover
-//     SET ?
-//   `;
+/**
+ * 存储文件信息
+ */
+export const createCover = async (cover: CoverModel) => {
+  // 准备查询
+  const statement = `
+    INSERT INTO cover
+    SET ?
+  `;
 
-//   // 执行查询
-//   const [data] = await connection.promise().query(statement, cover);
+  // 执行查询
+  const [data] = await connection.promise().query(statement, cover);
 
-//   // 提供数据
-//   return data;
-// };
+  // 提供数据
+  return data;
+};
 
 /**
 //  * 按 ID 查找文件
