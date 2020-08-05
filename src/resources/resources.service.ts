@@ -42,6 +42,7 @@ export const getResources = async (options: GetResourcesOptions) => {
       resources.id,
       resources.title,
       resources.description,
+      ${sqlFragment.grade},
       ${sqlFragment.user},
       ${sqlFragment.totalComments},
       ${sqlFragment.file},
@@ -49,6 +50,7 @@ export const getResources = async (options: GetResourcesOptions) => {
       ${sqlFragment.totalLikes}
     FROM resources
     ${sqlFragment.leftJoinUser}
+    ${sqlFragment.leftJoinGrade}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
     ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikeResources : ''}
@@ -197,7 +199,7 @@ export const getResourcesTotalCount = async (options: GetResourcesOptions) => {
   const statement = `
     SELECT
       COUNT(DISTINCT resources.id) AS total
-    FROM reesources
+    FROM resources
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
