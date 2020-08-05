@@ -16,10 +16,10 @@ router.post(
   coverController.store,
 );
 
-// /**
-//  * 文件服务
-//  */
-// router.get('/covers/:coverId/serve', coverController.serve);
+/**
+ * 文件服务
+ */
+router.get('/covers/:coverId/serve', coverController.serve);
 
 // /**
 //  * 文件信息
