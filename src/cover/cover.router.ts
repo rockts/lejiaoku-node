@@ -1,7 +1,7 @@
 import express from 'express';
 import * as coverController from './cover.controller';
 import { authGuard } from '../auth/auth.middleware';
-import { coverInterceptor } from './cover.middleware';
+import { coverInterceptor, coverProcessor } from './cover.middleware';
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ router.post(
   '/covers',
   authGuard,
   coverInterceptor,
-  // coverProcessor,
+  coverProcessor,
   coverController.store,
 );
 
