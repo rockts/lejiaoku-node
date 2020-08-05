@@ -5,5 +5,5 @@ export class ResourcesModel {
   userId?: number;
   gradeId?: number;
   subjectId?: number;
-  type_Id?: number;
+  typeId?: number;
 }

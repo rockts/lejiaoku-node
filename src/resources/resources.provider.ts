@@ -2,6 +2,17 @@
  * 查询片断
  */
 export const sqlFragment = {
+  grade: `
+    JSON_OBJECT(
+      'id', grade.id,
+      'name', grade.name
+    ) as grade
+  `,
+  leftJoinGrade: `
+    LEFT JOIN grade
+      ON grade.id = resources.gradeId
+  `,
+
   user: `
     JSON_OBJECT(
       'id', user.id,
