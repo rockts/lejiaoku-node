@@ -1,38 +1,38 @@
 import { Request, Response, NextFunction } from 'express';
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import Jimp from 'jimp';
 import { imageResizer } from './cover.service';
 
-// /**
-//  * 文件过滤器
-//  */
-// export const coverFilter = (coverTypes: Array<string>) => {
-//   return (
-//     request: Request,
-//     file: Express.Multer.File,
-//     callback: FileFilterCallback,
-//   ) => {
-//     // 测试文件类型
-//     const allowed = coverTypes.some(type => type === file.mimetype);
+/**
+ * 文件过滤器
+ */
+export const coverFilter = (coverTypes: Array<string>) => {
+  return (
+    request: Request,
+    file: Express.Multer.File,
+    callback: FileFilterCallback,
+  ) => {
+    // 测试文件类型
+    const allowed = coverTypes.some(type => type === file.mimetype);
 
-//     if (allowed) {
-//       // 允许上传
-//       callback(null, true);
-//     } else {
-//       // 拒绝上传
-//       callback(new Error('COVER_TYPE_NOT_ACCEPT'));
-//     }
-//   };
-// };
+    if (allowed) {
+      // 允许上传
+      callback(null, true);
+    } else {
+      // 拒绝上传
+      callback(new Error('COVER_TYPE_NOT_ACCEPT'));
+    }
+  };
+};
 
-// const coverUploadFilter = coverFilter(['image/png', 'image/jpg', 'image/jpeg']);
+const coverUploadFilter = coverFilter(['image/png', 'image/jpg', 'image/jpeg']);
 
 /**
  * 创建一个 Multer
  */
 const coverUpload = multer({
   dest: 'uploads/cover',
-  // fileFilter: coverUploadFilter,
+  fileFilter: coverUploadFilter,
 });
 
 /**
