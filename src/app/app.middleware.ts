@@ -63,6 +63,10 @@ export const defaultErrorHandler = (
       statusCode = 404;
       message = '封面不存在';
       break;
+    case 'COVER_NOT_SIZE':
+      statusCode = 404;
+      message = '请重新上传';
+      break;
     case 'TAG_ALREADY_EXISTS':
       statusCode = 400;
       message = '标签已存在';

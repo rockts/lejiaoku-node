@@ -78,18 +78,18 @@ export const serve = async (
         path.join(root, resized, `${filename}-${size}`),
       );
 
-      console.log('文件是否存在', coverExist);
-
       // 设置文件名与目录
       if (coverExist) {
         filename = `${filename}-${size}`;
         root = path.join(root, resized);
       }
+      throw new Error('COVER_NOT_SIZE');
     }
 
     // 做出响应
     response.sendFile(filename, {
       root,
+
       headers: {
         'Content-Type': cover.mimetype,
       },
