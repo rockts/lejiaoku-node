@@ -83,13 +83,11 @@ export const serve = async (
         filename = `${filename}-${size}`;
         root = path.join(root, resized);
       }
-      throw new Error('COVER_NOT_SIZE');
     }
 
     // 做出响应
     response.sendFile(filename, {
       root,
-
       headers: {
         'Content-Type': cover.mimetype,
       },
