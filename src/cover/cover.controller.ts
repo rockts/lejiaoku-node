@@ -3,7 +3,6 @@ import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import { createCover, findCoverById } from './cover.service';
-import { CoverModel } from './cover.model';
 
 /**
  * 上传文件
@@ -57,38 +56,40 @@ export const serve = async (
     // 查找文件信息
     const cover = await findCoverById(parseInt(coverId, 10));
 
-    // 要提供的图像尺寸
-    // const { size } = request.query;
+    // 要提供的图像尺寸;
+    const { size } = request.query;
 
-    // 文件名与目录
-    // let filename = cover.filename;
-    // let root = 'uploads/cover';
-    // let resized = 'resized';
+    // 文件名与目录;
+    let filename = cover.filename;
+    let root = 'uploads/cover';
+    let resized = 'resized';
 
-    //     if (size) {
-    //       // 可用的图像尺寸
-    //       const imageSizes = ['large', 'medium', 'thumbnail'];
+    if (size) {
+      // 可用的图像尺寸
+      const imageSizes = ['large', 'medium', 'thumbnail'];
 
-    //       // 检查文件尺寸是否可用
-    //       if (!imageSizes.some(item => item == size)) {
-    //         throw new Error('COVER_NOT_FOUND');
-    //       }
+      // 检查文件尺寸是否可用
+      if (!imageSizes.some(item => item == size)) {
+        throw new Error('COVER_NOT_FOUND');
+      }
 
-    //       // 检查文件是否存在
-    //       const coverExist = fs.existsSync(
-    //         path.join(root, resized, `${filename}-${size}`),
-    //       );
+      // 检查文件是否存在
+      const coverExist = fs.existsSync(
+        path.join(root, resized, `${filename}-${size}`),
+      );
 
-    //       // 设置文件名与目录
-    //       if (coverExist) {
-    //         filename = `${filename}-${size}`;
-    //         root = path.join(root, resized);
-    //       }
-    //     }
+      console.log('文件是否存在', coverExist);
+
+      // 设置文件名与目录
+      if (coverExist) {
+        filename = `${filename}-${size}`;
+        root = path.join(root, resized);
+      }
+    }
 
     // 做出响应
-    response.sendFile(cover.filename, {
-      root: 'uploads/cover',
+    response.sendFile(filename, {
+      root,
       headers: {
         'Content-Type': cover.mimetype,
       },
