@@ -4,7 +4,7 @@ import { authGuard } from '../auth/auth.middleware';
 import {
   coverInterceptor,
   coverProcessor,
-  deleteResourcesCovers,
+  deleteResourcesCovers(covers),
 } from './cover.middleware';
 
 const router = express.Router();
@@ -26,9 +26,11 @@ router.post(
 router.delete(
   '/covers/:coverId',
   authGuard,
-  deleteResourcesCovers,
+  deleteResourcesCovers(covers),
   coverController.destroy,
 );
+
+router.
 
 /**
  * 文件服务
