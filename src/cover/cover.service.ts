@@ -21,6 +21,23 @@ export const createCover = async (cover: CoverModel) => {
 };
 
 /**
+ * 删除封面
+ */
+export const deleteCover = async (coverId: number) => {
+  // 准备查询
+  const statement = `
+    DELETE FROM cover
+    WHERE id = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement, coverId);
+
+  // 提供数据
+  return data;
+};
+
+/**
  * 按 ID 查找文件
  */
 export const findCoverById = async (CoverId: number) => {
