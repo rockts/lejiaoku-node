@@ -1,12 +1,16 @@
 import express from 'express';
 import * as coverController from './cover.controller';
 import { authGuard } from '../auth/auth.middleware';
-import { coverInterceptor, coverProcessor } from './cover.middleware';
+import {
+  coverInterceptor,
+  coverProcessor,
+  deleteResourcesCovers,
+} from './cover.middleware';
 
 const router = express.Router();
 
 /**
- * 上传文件
+ * 上传封面
  */
 router.post(
   '/covers',
@@ -14,6 +18,16 @@ router.post(
   coverInterceptor,
   coverProcessor,
   coverController.store,
+);
+
+/**
+ * 删除封面
+ */
+router.delete(
+  '/covers/:coverId',
+  authGuard,
+  deleteResourcesCovers,
+  coverController.destroy,
 );
 
 /**

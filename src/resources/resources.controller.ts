@@ -90,17 +90,17 @@ export const update = async (
 };
 
 /**
- * 删除内容
+ * 删除资源
  */
 export const destroy = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 获取内容 ID
+  // 获取资源 ID
   const { resourcesId } = request.params;
 
-  // 删除内容
+  // 删除资源
   try {
     const data = await deleteResources(parseInt(resourcesId, 10));
     response.send(data);

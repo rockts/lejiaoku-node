@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import { createCover, findCoverById } from './cover.service';
+import { createCover, deleteCover, findCoverById } from './cover.service';
 
 /**
  * 上传文件
@@ -36,6 +36,51 @@ export const store = async (
     });
     // 做出响应
     response.status(201).send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 更新封面
+ */
+// export const update = async (
+//   request: Request,
+//   response: Response,
+//   next: NextFunction,
+// ) => {
+//   // 获取封面 ID
+//   const { coverId } = request.params;
+
+//   //准备数据
+//   const cover = _.pick(request.body, ['name']);
+
+//   // 更新封面
+//   try {
+//     const data = await updateCover(parseInt(`${coverId}`, 10), cover);
+
+//     // 做出响应
+//     response.send(data);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+/**
+ * 删除封面
+ */
+export const destroy = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取封面 ID
+  const { coverId } = request.params;
+
+  // 删除封面
+  try {
+    const data = await deleteCover(parseInt(coverId, 10));
+    response.send(data);
   } catch (error) {
     next(error);
   }
@@ -98,22 +143,22 @@ export const serve = async (
 };
 
 /**
- * 文件信息
+ * 封面信息
  */
 export const metadata = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 文件 ID
+  // 封面 ID
   const { coverId } = request.params;
 
   try {
-    // 查询文件数据
+    // 查询封面数据
     const cover = await findCoverById(parseInt(coverId, 10));
 
     // 准备响应数据
-    const data = _.pick(cover, ['id', 'size', 'width', 'height']);
+    const data = _.pick(cover, ['id', 'filename', 'size', 'width', 'height']);
 
     // 做出响应
     response.send(data);

@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import multer, { FileFilterCallback } from 'multer';
 import Jimp from 'jimp';
+import fs from 'fs';
 import { imageResizer } from './cover.service';
+import { CoverModel } from './cover.model';
 
 /**
  * 文件过滤器
@@ -36,19 +38,19 @@ const coverUpload = multer({
 });
 
 /**
- * 文件拦截器
+ * 封面拦截器
  */
 export const coverInterceptor = coverUpload.single('file');
 
 /**
- * 文件处理器
+ * 封面处理器
  */
 export const coverProcessor = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 文件路径
+  // 封面路径
   const { path } = request.file;
 
   let image: Jimp;
@@ -60,10 +62,10 @@ export const coverProcessor = async (
     return next(error);
   }
 
-  // 准备文件数据
+  // 准备封面数据
   const { width, height } = image['bitmap'];
 
-  // 在请求中添加文件数据
+  // 在请求中添加封面数据
   request.fileMetaData = {
     width: width,
     height: height,
@@ -74,4 +76,45 @@ export const coverProcessor = async (
 
   // 下一步
   next();
+};
+
+/**
+ * 封面删除处理器
+ */
+// export const coverDeleteProcessor = async (
+//   request: Request,
+//   response: Response,
+//   next: NextFunction,
+// ) => {
+//   // 封面路径
+//   const { path } = request.file;
+//   fs.unlink(path, function(err) {
+//     if (err) {
+//       throw err;
+//     } else {
+//       console.log('Successfully deleted the file.');
+//     }
+//   });
+// };
+
+/**
+ * 删除资源封面
+ */
+export const deleteResourcesCovers = async (covers: Array<CoverModel>) => {
+  covers.map(cover => {
+    fs.unlink(`uploads/cover/${cover.filename}`, error => {
+      console.log(error);
+    });
+    fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
+      console.log(error);
+    });
+    fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
+      console.log(error);
+    });
+    fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
+      console.log(error);
+    });
+  });
+
+  console.log(covers);
 };

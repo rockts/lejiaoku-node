@@ -113,7 +113,7 @@ export const updateResources = async (
 };
 
 /**
- * 删除内容
+ * 删除资源
  */
 export const deleteResources = async (resourcesId: number) => {
   // 准备查询
