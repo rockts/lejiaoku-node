@@ -50,7 +50,7 @@ export const coverProcessor = async (
   next: NextFunction,
 ) => {
   // 封面路径
-  const { path } = request.file;
+  const { path } = request.file
 
   let image: Jimp;
 
@@ -90,21 +90,26 @@ export const deleteResourcesCover = async (
 
   const cover = await findCoverById(parseInt(coverId, 10));
 
+  // 删除文件
   fs.unlink(`uploads/cover/${cover.filename}`, error => {
-    console.log(error);
+    console.log(`${cover.filename}`, '文件已被删除');
   });
 
   fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
-    console.log(error);
+    if (error) throw error;
+    console.log(`${cover.filename}-thumbnail`, '文件已被删除');
   });
 
   fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
-    console.log(error);
+    if (error) throw error;
+    console.log(`${cover.filename}-medium`, '文件已被删除');
   });
 
   fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
-    console.log(error);
+    if (error) throw error;
+    console.log(`${cover.filename}-large`, '文件已被删除');
   });
 
+  // 下一步
   next();
 };
