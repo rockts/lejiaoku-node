@@ -50,16 +50,15 @@ export const coverProcessor = async (
   next: NextFunction,
 ) => {
   // 封面路径
-  const { path } = request.file
-
+  const { path } = request.file;
   let image: Jimp;
 
   try {
     // 读取图像文件
-    image = await Jimp.read(path);
+    image = await Jimp.read(path)
   } catch (error) {
-    return next(error);
-  }
+    return next(error)
+  };
 
   // 准备封面数据
   const { width, height } = image['bitmap'];
@@ -89,27 +88,26 @@ export const deleteResourcesCover = async (
 ) => {
   // 获取封面 ID
   const { coverId } = request.params;
-
   const cover = await findCoverById(parseInt(coverId, 10));
 
   // 删除文件
-  fs.unlink(`uploads / cover / ${cover.filename}`, error => {
+  fs.unlink(`uploads/cover/${cover.filename}`, error => {
     console.log(`${cover.filename}`, '文件已被删除');
   });
 
-  fs.unlink(`uploads / cover / resized / ${cover.filename} - thumbnail`, error => {
+  fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
     if (error) throw error;
-    console.log(`${cover.filename} - thumbnail`, '文件已被删除');
+    console.log(`${cover.filename}-thumbnail`, '文件已被删除');
   });
 
-  fs.unlink(`uploads / cover / resized / ${cover.filename} - medium`, error => {
+  fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
     if (error) throw error;
     console.log(`${cover.filename} - medium`, '文件已被删除');
   });
 
-  fs.unlink(`uploads / cover / resized / ${cover.filename} - large`, error => {
+  fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
     if (error) throw error;
-    console.log(`${cover.filename} - large`, '文件已被删除');
+    console.log(`${cover.filename}-large`, '文件已被删除');
   });
 
   // 下一步
