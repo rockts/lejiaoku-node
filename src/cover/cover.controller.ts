@@ -42,31 +42,6 @@ export const store = async (
 };
 
 /**
- * 更新封面
- */
-// export const update = async (
-//   request: Request,
-//   response: Response,
-//   next: NextFunction,
-// ) => {
-//   // 获取封面 ID
-//   const { coverId } = request.params;
-
-//   //准备数据
-//   const cover = _.pick(request.body, ['name']);
-
-//   // 更新封面
-//   try {
-//     const data = await updateCover(parseInt(`${coverId}`, 10), cover);
-
-//     // 做出响应
-//     response.send(data);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-/**
  * 删除封面
  */
 export const destroy = async (
