@@ -1,9 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, request } from 'express';
 import multer, { FileFilterCallback } from 'multer';
 import Jimp from 'jimp';
 import fs from 'fs';
-import { imageResizer } from './cover.service';
-import { CoverModel } from './cover.model';
+import { imageResizer, findCoverById } from './cover.service';
 
 /**
  * 文件过滤器
@@ -79,42 +78,33 @@ export const coverProcessor = async (
 };
 
 /**
- * 封面删除处理器
- */
-// export const coverDeleteProcessor = async (
-//   request: Request,
-//   response: Response,
-//   next: NextFunction,
-// ) => {
-//   // 封面路径
-//   const { path } = request.file;
-//   fs.unlink(path, function(err) {
-//     if (err) {
-//       throw err;
-//     } else {
-//       console.log('Successfully deleted the file.');
-//     }
-//   });
-// };
-
-/**
  * 删除资源封面
  */
-export const deleteResourcesCovers = async (covers: Array<CoverModel>) => {
-  covers.map(cover => {
-    fs.unlink(`uploads/cover/${cover.filename}`, error => {
-      console.log(error);
-    });
-    fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
-      console.log(error);
-    });
-    fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
-      console.log(error);
-    });
-    fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
-      console.log(error);
-    });
+export const deleteResourcesCover = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取封面 ID
+  const { coverId } = request.params;
+
+  const cover = await findCoverById(parseInt(coverId, 10));
+
+  fs.unlink(`uploads/cover/${cover.filename}`, error => {
+    console.log(error);
   });
 
-  console.log(covers);
+  fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
+    console.log(error);
+  });
+
+  fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
+    console.log(error);
+  });
+
+  fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
+    console.log(error);
+  });
+
+  next();
 };
