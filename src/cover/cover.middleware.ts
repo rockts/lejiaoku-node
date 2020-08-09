@@ -90,25 +90,29 @@ export const deleteResourcesCover = async (
   const { coverId } = request.params;
   const cover = await findCoverById(parseInt(coverId, 10));
 
-  // 删除文件
-  fs.unlink(`uploads/cover/${cover.filename}`, error => {
-    console.log(`${cover.filename}`, '文件已被删除');
-  });
+  if (!cover) {
+    next(new Error('COVER_NOT_FOUND'))
+  } else {
+    // 删除文件
+    fs.unlink(`uploads/cover/${cover.filename}`, error => {
+      console.log(`${cover.filename}`, '文件已被删除');
+    });
 
-  fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
-    if (error) throw error;
-    console.log(`${cover.filename}-thumbnail`, '文件已被删除');
-  });
+    fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
+      if (error) throw error;
+      console.log(`${cover.filename}-thumbnail`, '文件已被删除');
+    });
 
-  fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
-    if (error) throw error;
-    console.log(`${cover.filename} - medium`, '文件已被删除');
-  });
+    fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
+      if (error) throw error;
+      console.log(`${cover.filename}-medium`, '文件已被删除');
+    });
 
-  fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
-    if (error) throw error;
-    console.log(`${cover.filename}-large`, '文件已被删除');
-  });
+    fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
+      if (error) throw error;
+      console.log(`${cover.filename}-large`, '文件已被删除');
+    });
+  }
 
   // 下一步
   next();
