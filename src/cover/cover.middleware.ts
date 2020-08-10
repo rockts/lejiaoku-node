@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction, request } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import multer, { FileFilterCallback } from 'multer';
 import Jimp from 'jimp';
 import fs from 'fs';

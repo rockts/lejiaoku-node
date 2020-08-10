@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import multer, { FileFilterCallback } from 'multer';
-import Jimp from 'jimp';
-import { imageResizer } from './file.service';
+
 
 /**
  * 文件过滤器
@@ -29,15 +28,16 @@ const fileUploadFilter = fileFilter([
   'image/png',
   'image/jpg',
   'image/jpeg',
-  'application/msword',
+  'application / vnd.openxmlformats - officedocument.spreadsheetml.sheet',
   'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]);
 
 /**
  * 创建一个 Multer
  */
 const fileUpload = multer({
-  dest: 'uploads/',
+  dest: 'uploads/files',
   fileFilter: fileUploadFilter,
 });
 
@@ -57,27 +57,4 @@ export const fileProcessor = async (
   // 文件路径
   const { path } = request.file;
 
-  let image: Jimp;
-
-  try {
-    // 读取图像文件
-    image = await Jimp.read(path);
-  } catch (error) {
-    return next(error);
-  }
-
-  // 准备文件数据
-  const { imageSize, tags } = image['_exif'];
-
-  // 在请求中添加文件数据
-  request.fileMetaData = {
-    width: imageSize.width,
-    height: imageSize.height,
-  };
-
-  // 调整图像尺寸
-  imageResizer(image, request.file);
-
-  // 下一步
-  next();
-};
+}

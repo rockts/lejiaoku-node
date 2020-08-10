@@ -1,14 +1,14 @@
 import { connection } from '../app/database/mysql';
-import { TypeModel } from './type.model';
+import { AttributeTypeModel } from './attribute_type.model';
 
 /**
- * 获取分类列表
+ * 获取类型列表
  */
-export const getType = async () => {
+export const getAttributeType = async () => {
   const statement = `
     SELECT
-      id, name
-    FROM type
+      id, name, alias
+    FROM attribute_type
     ORDER BY id ASC
   `;
 
@@ -18,12 +18,12 @@ export const getType = async () => {
 };
 
 /**
- * 创建分类
+ * 创建类型
  */
-export const createType = async (type: TypeModel) => {
+export const createAttributeType = async (type: AttributeTypeModel) => {
   // 准备查询
   const statement = `
-    INSERT INTO type
+    INSERT INTO attribute_type
     SET ?
   `;
 
@@ -37,10 +37,11 @@ export const createType = async (type: TypeModel) => {
 /**
  * 按名字查找分类
  */
-export const getTypeByName = async (typeName: string) => {
+export const getAttributeTypeByName = async (typeName: string) => {
   // 准备查询
   const statement = `
-    SELECT id, name FROM type
+    SELECT id, name 
+    FROM attribute_type
     WHERE name = ?
   `;
 
@@ -54,10 +55,10 @@ export const getTypeByName = async (typeName: string) => {
 /**
  * 更新分类
  */
-export const updateType = async (typeId: number, type: TypeModel) => {
+export const updateAttributeType = async (typeId: number, type: AttributeTypeModel) => {
   // 准备数据
   const statement = `
-    UPDATE type
+    UPDATE attribute_type
     SET ?
     WHERE id = ?
   `;
@@ -72,10 +73,10 @@ export const updateType = async (typeId: number, type: TypeModel) => {
 /**
  * 删除分类
  */
-export const deleteType = async (typeId: number) => {
+export const deleteAttributeType = async (typeId: number) => {
   // 准备数据
   const statement = `
-    DELETE FROM type
+    DELETE FROM attribute_type
     WHERE id = ?
   `;
 
@@ -87,14 +88,14 @@ export const deleteType = async (typeId: number) => {
 };
 
 /**
- * 统计内容数量
+ * 统计属性类型数量
  */
-export const getTypeTotalCount = async () => {
+export const getAttributeTypeTotalCount = async () => {
   // 准备查询
   const statement = `
     SELECT
-      COUNT(DISTINCT type.id) AS total
-    FROM type
+      COUNT(DISTINCT attribute_type.id) AS total
+    FROM attribute_type
   `;
 
   // 执行查询

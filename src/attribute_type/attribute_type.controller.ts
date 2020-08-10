@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import {
-  createType,
-  updateType,
-  getTypeByName,
-  deleteType,
-  getTypeTotalCount,
-  getType,
-} from './type.service';
+  createAttributeType,
+  updateAttributeType,
+  getAttributeTypeByName,
+  deleteAttributeType,
+  getAttributeTypeTotalCount,
+  getAttributeType,
+} from './attribute_type.service';
 
 /**
  * 分类列表
@@ -19,7 +19,7 @@ export const index = async (
 ) => {
   try {
     // 统计分类数量
-    const totalCount = await getTypeTotalCount();
+    const totalCount = await getAttributeTypeTotalCount();
 
     // 设置响应头部
     response.header('X-Total-Count', totalCount);
@@ -28,7 +28,7 @@ export const index = async (
   }
 
   try {
-    const type = await getType();
+    const type = await getAttributeType();
     response.send(type);
   } catch (error) {
     next(error);
@@ -36,7 +36,7 @@ export const index = async (
 };
 
 /**
- * 创建分类
+ * 创建类型
  */
 export const store = async (
   request: Request,
@@ -44,17 +44,17 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { name } = request.body;
+  const { name, alias } = request.body;
 
   try {
-    // 查找分类
-    const type = await getTypeByName(name);
+    // 查找类型
+    const arttribute_type = await getAttributeTypeByName(name);
 
     // 如果分类存在就报错
-    if (type) throw new Error('TYPE_ALREADY_EXISTS');
+    if (arttribute_type) throw new Error('ARTTRIBUTE_TYPE_ALREADY_EXISTS');
 
     // 存储分类
-    const data = await createType({ name });
+    const data = await createAttributeType({ name, alias });
 
     // 做出响应
     response.status(201).send(data);
@@ -77,7 +77,7 @@ export const update = async (
 
   // 更新分类
   try {
-    const data = await updateType(parseInt(`${typeId}`, 10), type);
+    const data = await updateAttributeType(parseInt(`${typeId}`, 10), type);
 
     // 做出响应
     response.send(data);
@@ -99,7 +99,7 @@ export const destroy = async (
 
   // 删除分类
   try {
-    const data = await deleteType(parseInt(typeId, 10));
+    const data = await deleteAttributeType(parseInt(typeId, 10));
 
     // 做出响应
     response.send(data);

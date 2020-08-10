@@ -71,10 +71,11 @@ export const defaultErrorHandler = (
       statusCode = 400;
       message = '标签已存在';
       break;
-    case 'TYPE_ALREADY_EXISTS':
+    case 'ARTTRIBUTE_TYPE_ALREADY_EXISTS':
       statusCode = 400;
-      message = '分类已存在';
+      message = '类型已存在';
       break;
+
     case 'SUBJECT_ALREADY_EXISTS':
       statusCode = 400;
       message = '学科已存在';

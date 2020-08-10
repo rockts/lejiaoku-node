@@ -1,5 +1,5 @@
 import express from 'express';
-import * as typeController from './type.controller';
+import * as attribute_typeController from './attribute_type.controller';
 import { authGuard, accessControl } from '../auth/auth.middleware';
 
 const router = express.Router();
@@ -7,31 +7,31 @@ const router = express.Router();
 /**
  * 分类列表
  */
-router.get('/types', typeController.index);
+router.get('/attribute_types', attribute_typeController.index);
 
 /**
  * 创建分类
  */
-router.post('/types', authGuard, typeController.store);
+router.post('/attribute_types', authGuard, attribute_typeController.store);
 
 /**
  * 更新分类
  */
 router.patch(
-  '/types/:typeId',
+  '/attribute_types/:attribute_typesId',
   authGuard,
   accessControl({ possession: true }),
-  typeController.update,
+  attribute_typeController.update,
 );
 
 /**
  *  删除分类
  */
 router.delete(
-  '/types/:typeId',
+  '/attribute_types/:attribute_typesId',
   authGuard,
   accessControl({ possession: true }),
-  typeController.destroy,
+  attribute_typeController.destroy,
 );
 
 /**

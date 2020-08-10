@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import { createFile, findFileById } from './file.service';
+import { createFile, findFileById, findResourcesTypeId } from './file.service';
 
 /**
  * 上传文件
@@ -18,6 +18,9 @@ export const store = async (
   // 所属内容
   const { resources: resourcesId } = request.query;
 
+  // 所属分类
+  const { type: typeId } = request.query;
+
   // 文件信息
   const fileInfo = _.pick(request.file, [
     'originalname',
@@ -26,14 +29,19 @@ export const store = async (
     'size',
   ]);
 
+  const type = findResourcesTypeId(parseInt(typeId, 10));
+
   try {
     // 保存文件信息
     const data = await createFile({
       ...fileInfo,
       userId,
       resourcesId,
-      ...request.fileMetaData,
+      typeId,
     });
+
+    console.log(typeId);
+
 
     // 做出响应
     response.status(201).send(data);
@@ -57,34 +65,11 @@ export const serve = async (
     // 查找文件信息
     const file = await findFileById(parseInt(fileId, 10));
 
-    // 要提供的图像尺寸
-    const { size } = request.query;
-
     // 文件名与目录
     let filename = file.filename;
     let root = 'uploads';
     let resized = 'resized';
 
-    if (size) {
-      // 可用的图像尺寸
-      const imageSizes = ['large', 'medium', 'thumbnail'];
-
-      // 检查文件尺寸是否可用
-      if (!imageSizes.some(item => item == size)) {
-        throw new Error('FILE_NOT_FOUND');
-      }
-
-      // 检查文件是否存在
-      const fileExist = fs.existsSync(
-        path.join(root, resized, `${filename}-${size}`),
-      );
-
-      // 设置文件名与目录
-      if (fileExist) {
-        filename = `${filename}-${size}`;
-        root = path.join(root, resized);
-      }
-    }
 
     // 做出响应
     response.sendFile(filename, {
@@ -114,7 +99,7 @@ export const metadata = async (
     const file = await findFileById(parseInt(fileId, 10));
 
     // 准备响应数据
-    const data = _.pick(file, ['id', 'size', 'width', 'height', 'metadata']);
+    const data = _.pick(file, ['id', 'size', 'metadata']);
 
     // 做出响应
     response.send(data);
