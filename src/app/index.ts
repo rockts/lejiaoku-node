@@ -9,7 +9,6 @@ import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
 import appRouter from './app.router';
-import typeRouter from '../type/type.router';
 import subjectRouter from '../subject/subject.router';
 import gradeRouter from '../grade/grade.router';
 import versionRouter from '../version/version.router';
@@ -40,7 +39,6 @@ app.use(
   commentRouter,
   likeRouter,
   appRouter,
-  typeRouter,
   subjectRouter,
   gradeRouter,
   versionRouter,
