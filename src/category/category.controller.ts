@@ -1,12 +1,16 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, request } from 'express';
 import _ from 'lodash';
 import {
-  createCategory,
+  createAttr,
   updateCategory,
   getCategoryByName,
   deleteCategory,
   getCategoryTotalCount,
+  getAttrTotalCount,
   getCategory,
+  getAttr,
+  findAttrById,
+  getAttrByName,
 } from './category.service';
 
 /**
@@ -28,15 +32,41 @@ export const index = async (
   }
 
   try {
-    const type = await getCategory();
-    response.send(type);
+    const category = await getCategory();
+    response.send(category);
   } catch (error) {
     next(error);
   }
 };
 
+/** 
+ * 属性类型列表
+ */
+export const index_attr = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    // 统计属性类型数量
+    const totalcount = await getAttrTotalCount();
+
+    // 设置响应头部
+    response.header('X-Total-Count', totalcount);
+  } catch (error) {
+    next(error);
+  }
+
+  try {
+    const attr = await getAttr();
+    response.send(attr);
+  } catch (error) {
+    next(error)
+  }
+};
+
 /**
- * 创建类别
+ * 创建属性类型
  */
 export const store = async (
   request: Request,
@@ -44,20 +74,43 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { name, attrId, attr_name, attr_alias } = request.body
+  const { name, attrId, attr_name, attr_alias } = request.body;
 
   try {
-    // 查找资源类别
-    const rescource_category = await getCategoryByName(name);
+    // 查找属性类型
+    const attr = await getAttrByName(attr_name);
 
-    // 如果资源类别存在就报错
-    if (rescource_category) throw new Error('RESCOURCE_CATEGORY_ALREADY_EXISTS');
+    // 如果属性类型存在就报错
+    if (attr) throw new Error('ATTR_ALREADY_EXISTS');
 
     // 存储分类
-    const data = await createCategory({ name, attrId, attr_name, attr_alias });
+    const data = await createAttr({ name, attrId, attr_name, attr_alias });
 
     // 做出响应
     response.status(201).send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 根据属性类型创建类别
+ */
+export const category_store = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取 attr_Id
+  const { attrId } = request.params;
+
+  try {
+    // 查找 attr 信息
+    const attr = await findAttrById(parseInt(attrId, 10));
+
+    // 提供 attrid 参数
+    const { attrid } = request.query;
+
   } catch (error) {
     next(error);
   }
