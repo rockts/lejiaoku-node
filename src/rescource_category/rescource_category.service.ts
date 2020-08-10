@@ -1,14 +1,14 @@
 import { connection } from '../app/database/mysql';
-import { AttributeTypeModel } from './attribute_type.model';
+import { RescourceCategoryModel } from './rescource_category.model';
 
 /**
  * 获取类型列表
  */
-export const getAttributeType = async () => {
+export const getRescourceCategory = async () => {
   const statement = `
     SELECT
-      id, name, alias
-    FROM attribute_type
+      id, name, arrtId
+    FROM resource_category
     ORDER BY id ASC
   `;
 
@@ -20,10 +20,11 @@ export const getAttributeType = async () => {
 /**
  * 创建类型
  */
-export const createAttributeType = async (type: AttributeTypeModel) => {
+export const createRescourceCategory = async (type: RescourceCategoryModel) => {
   // 准备查询
   const statement = `
-    INSERT INTO attribute_type
+    INSERT INTO     
+    FROM resource_category
     SET ?
   `;
 
@@ -37,11 +38,11 @@ export const createAttributeType = async (type: AttributeTypeModel) => {
 /**
  * 按名字查找分类
  */
-export const getAttributeTypeByName = async (typeName: string) => {
+export const getRescourceCategoryByName = async (typeName: string) => {
   // 准备查询
   const statement = `
     SELECT id, name 
-    FROM attribute_type
+    FROM resource_category
     WHERE name = ?
   `;
 
@@ -55,10 +56,10 @@ export const getAttributeTypeByName = async (typeName: string) => {
 /**
  * 更新分类
  */
-export const updateAttributeType = async (typeId: number, type: AttributeTypeModel) => {
+export const updateRescourceCategory = async (typeId: number, type: RescourceCategoryModel) => {
   // 准备数据
   const statement = `
-    UPDATE attribute_type
+    UPDATE resource_category
     SET ?
     WHERE id = ?
   `;
@@ -73,10 +74,10 @@ export const updateAttributeType = async (typeId: number, type: AttributeTypeMod
 /**
  * 删除分类
  */
-export const deleteAttributeType = async (typeId: number) => {
+export const deleteRescourceCategory = async (typeId: number) => {
   // 准备数据
   const statement = `
-    DELETE FROM attribute_type
+    DELETE FROM resource_category
     WHERE id = ?
   `;
 
@@ -90,12 +91,12 @@ export const deleteAttributeType = async (typeId: number) => {
 /**
  * 统计属性类型数量
  */
-export const getAttributeTypeTotalCount = async () => {
+export const getRescourceCategoryTotalCount = async () => {
   // 准备查询
   const statement = `
     SELECT
-      COUNT(DISTINCT attribute_type.id) AS total
-    FROM attribute_type
+      COUNT(DISTINCT resource_category.id) AS total
+    FROM resource_category
   `;
 
   // 执行查询

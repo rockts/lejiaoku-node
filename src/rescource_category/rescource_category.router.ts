@@ -1,37 +1,37 @@
 import express from 'express';
-import * as attribute_typeController from './rescource_category.controller';
+import * as rescource_categoryController from './rescource_category.controller';
 import { authGuard, accessControl } from '../auth/auth.middleware';
 
 const router = express.Router();
 
 /**
- * 分类列表
+ * 类别列表
  */
-router.get('/attribute_types', attribute_typeController.index);
+router.get('/rescource-categorys', rescource_categoryController.index);
 
 /**
- * 创建分类
+ * 创建类别
  */
-router.post('/attribute_types', authGuard, attribute_typeController.store);
+router.post('/rescource-categorys', authGuard, rescource_categoryController.store);
 
 /**
- * 更新分类
+ * 更新类别
  */
 router.patch(
-  '/attribute_types/:attribute_typesId',
+  '/rescource-category/:rescource-categoryId',
   authGuard,
   accessControl({ possession: true }),
-  attribute_typeController.update,
+  rescource_categoryController.update,
 );
 
 /**
  *  删除分类
  */
 router.delete(
-  '/attribute_types/:attribute_typesId',
+  '/rescource-category/:rescource-categoryId',
   authGuard,
   accessControl({ possession: true }),
-  attribute_typeController.destroy,
+  rescource_categoryController.destroy,
 );
 
 /**

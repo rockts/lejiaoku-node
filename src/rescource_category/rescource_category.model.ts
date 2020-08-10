@@ -1,5 +1,5 @@
-export class AttributeTypeModel {
+export class RescourceCategoryModel {
   id?: number;
   name?: string;
-  alias?: string;
+  attrId?: number;
 }
