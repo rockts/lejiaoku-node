@@ -19,9 +19,26 @@ export const getCategory = async () => {
 };
 
 /**
- * 创建资源类别
+ * 获取属性类型列表
+ * @param attr 
  */
-export const createCategory = async (category: CategoryModel) => {
+export const getAttr = async () => {
+  const statement = `
+    SELECT
+    attrId, attr_name, attr_alias
+    FROM category
+    GROUP BY attrId, attr_name, attr_alias
+  `;
+
+  const [data] = await connection.promise().query(statement);
+
+  return data;
+};
+
+/**
+ * 创建属性类型
+ */
+export const createAttr = async (attr: CategoryModel) => {
   // 准备查询
   const statement = `
     INSERT INTO category
@@ -29,14 +46,14 @@ export const createCategory = async (category: CategoryModel) => {
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, category);
+  const [data] = await connection.promise().query(statement, attr);
 
   // 提供数据
   return data as any;
 };
 
 /**
- * 按名字查找分类
+ * 按名字查找类别
  */
 export const getCategoryByName = async (categoryName: string) => {
   // 准备查询
@@ -48,6 +65,45 @@ export const getCategoryByName = async (categoryName: string) => {
 
   // 执行查询
   const [data] = await connection.promise().query(statement, categoryName);
+
+  // 提供数据
+  return data[0];
+};
+
+/**
+ * 按名字查找属性类型
+ * @param AttrName
+ */
+export const getAttrByName = async (attrName: string) => {
+  // 准备查询
+  const statement = `
+    SELECT attrId, attr_name
+    FROM category
+    WHERE attr_name = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement, attrName);
+
+  // 提供数据
+  return data[0];
+};
+
+
+/**
+ * 按 ID 查找 attr
+ * @param categoryId 
+ * @param category 
+ */
+export const findAttrById = async (AttrId: number) => {
+  // 准备查询
+  const statement = `
+    SELECT * FROM category
+    WHERE attId = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement, AttrId);
 
   // 提供数据
   return data[0];
@@ -96,6 +152,24 @@ export const getCategoryTotalCount = async () => {
   const statement = `
     SELECT
       COUNT(DISTINCT category.id) AS total
+    FROM category
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement);
+
+  // 提供结果
+  return data[0].total;
+};
+
+/**
+ * 统计属性类型数据
+ */
+export const getAttrTotalCount = async () => {
+  // 准备查询
+  const statement = `
+    SELECT
+     COUNT(DISTINCT category.attrId) AS total
     FROM category
   `;
 
