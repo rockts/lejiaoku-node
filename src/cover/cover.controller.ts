@@ -5,7 +5,7 @@ import _ from 'lodash';
 import { createCover, deleteCover, findCoverById } from './cover.service';
 
 /**
- * 上传文件
+ * 上传封面
  */
 export const store = async (
   request: Request,
@@ -62,14 +62,14 @@ export const destroy = async (
 };
 
 /**
- * 文件服务
+ * 封面服务
  */
 export const serve = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 从地址参数里得到文件 ID
+  // 从地址参数里得到封面 ID
   const { coverId } = request.params;
 
   try {

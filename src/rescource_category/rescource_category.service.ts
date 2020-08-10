@@ -18,18 +18,17 @@ export const getRescourceCategory = async () => {
 };
 
 /**
- * 创建类型
+ * 创建资源类别
  */
-export const createRescourceCategory = async (type: RescourceCategoryModel) => {
+export const createRescourceCategory = async (rescource_category: RescourceCategoryModel) => {
   // 准备查询
   const statement = `
-    INSERT INTO     
-    FROM resource_category
+    INSERT INTO resource_category
     SET ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, type);
+  const [data] = await connection.promise().query(statement, rescource_category);
 
   // 提供数据
   return data as any;
@@ -38,7 +37,7 @@ export const createRescourceCategory = async (type: RescourceCategoryModel) => {
 /**
  * 按名字查找分类
  */
-export const getRescourceCategoryByName = async (typeName: string) => {
+export const getRescourceCategoryByName = async (rescourceCategoryName: string) => {
   // 准备查询
   const statement = `
     SELECT id, name 
@@ -47,7 +46,7 @@ export const getRescourceCategoryByName = async (typeName: string) => {
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, typeName);
+  const [data] = await connection.promise().query(statement, rescourceCategoryName);
 
   // 提供数据
   return data[0];

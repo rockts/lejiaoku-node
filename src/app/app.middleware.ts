@@ -73,9 +73,12 @@ export const defaultErrorHandler = (
       break;
     case 'ARTTRIBUTE_TYPE_ALREADY_EXISTS':
       statusCode = 400;
-      message = '类型已存在';
+      message = '属性类型已存在';
       break;
-
+    case 'RESCOURCE_CATEGORY_ALREADY_EXISTS':
+      statusCode = 400;
+      message = '资源类别已存在';
+      break;
     case 'SUBJECT_ALREADY_EXISTS':
       statusCode = 400;
       message = '学科已存在';
