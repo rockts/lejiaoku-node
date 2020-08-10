@@ -10,12 +10,13 @@ const router = express.Router();
 router.get('/rescource-categorys', rescource_categoryController.index);
 
 /**
- * 创建类别
+ * 创建资源类别
  */
-router.post('/rescource-categorys', authGuard, rescource_categoryController.store);
+router.post(
+  '/rescource-categorys', authGuard, accessControl({ possession: true }), rescource_categoryController.store);
 
 /**
- * 更新类别
+ * 更新资源类别
  */
 router.patch(
   '/rescource-category/:rescource-categoryId',

@@ -53,9 +53,9 @@ export const getRescourceCategoryByName = async (rescourceCategoryName: string) 
 };
 
 /**
- * 更新分类
+ * 更新资源类别
  */
-export const updateRescourceCategory = async (typeId: number, type: RescourceCategoryModel) => {
+export const updateRescourceCategory = async (rescource_typeId: number, rescourceType: RescourceCategoryModel) => {
   // 准备数据
   const statement = `
     UPDATE resource_category
@@ -64,7 +64,7 @@ export const updateRescourceCategory = async (typeId: number, type: RescourceCat
   `;
 
   // 执行
-  const [data] = await connection.promise().query(statement, [type, typeId]);
+  const [data] = await connection.promise().query(statement, [rescourceType, rescource_typeId]);
 
   // 提供数据
   return data;
