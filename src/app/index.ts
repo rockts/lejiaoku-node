@@ -9,10 +9,8 @@ import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
 import appRouter from './app.router';
-import subjectRouter from '../subject/subject.router';
-import gradeRouter from '../grade/grade.router';
-import versionRouter from '../version/version.router';
 import attribute_typeRouter from '../attribute_type/attribute_type.router';
+import rescource_categoryRouter from "../rescource_category/rescource_category.router";
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -39,10 +37,8 @@ app.use(
   commentRouter,
   likeRouter,
   appRouter,
-  subjectRouter,
-  gradeRouter,
-  versionRouter,
   attribute_typeRouter,
+  rescource_categoryRouter
 );
 
 /**

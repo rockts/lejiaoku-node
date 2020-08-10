@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import {
-  createAttributeType,
-  updateAttributeType,
-  getAttributeTypeByName,
-  deleteAttributeType,
-  getAttributeTypeTotalCount,
-  getAttributeType,
+  createRescourceCategory,
+  updateRescourceCategory,
+  getRescourceCategoryByName,
+  deleteRescourceCategory,
+  getRescourceCategoryTotalCount,
+  getRescourceCategory,
 } from './rescource_category.service';
 
 /**
@@ -19,7 +19,7 @@ export const index = async (
 ) => {
   try {
     // 统计分类数量
-    const totalCount = await getAttributeTypeTotalCount();
+    const totalCount = await getRescourceCategoryTotalCount();
 
     // 设置响应头部
     response.header('X-Total-Count', totalCount);
@@ -28,7 +28,7 @@ export const index = async (
   }
 
   try {
-    const type = await getAttributeType();
+    const type = await getRescourceCategory();
     response.send(type);
   } catch (error) {
     next(error);
@@ -44,17 +44,17 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { name, alias } = request.body;
+  const { name, attrId } = request.body;
 
   try {
     // 查找类型
-    const arttribute_type = await getAttributeTypeByName(name);
+    const arttribute_type = await getRescourceCategoryByName(name);
 
     // 如果分类存在就报错
     if (arttribute_type) throw new Error('ARTTRIBUTE_TYPE_ALREADY_EXISTS');
 
     // 存储分类
-    const data = await createAttributeType({ name, alias });
+    const data = await createRescourceCategory({ name, attrId });
 
     // 做出响应
     response.status(201).send(data);
@@ -77,7 +77,7 @@ export const update = async (
 
   // 更新分类
   try {
-    const data = await updateAttributeType(parseInt(`${typeId}`, 10), type);
+    const data = await updateRescourceCategory(parseInt(`${typeId}`, 10), type);
 
     // 做出响应
     response.send(data);
@@ -99,7 +99,7 @@ export const destroy = async (
 
   // 删除分类
   try {
-    const data = await deleteAttributeType(parseInt(typeId, 10));
+    const data = await deleteRescourceCategory(parseInt(typeId, 10));
 
     // 做出响应
     response.send(data);
