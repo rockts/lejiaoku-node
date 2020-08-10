@@ -2,12 +2,12 @@ import { connection } from '../app/database/mysql';
 import { RescourceCategoryModel } from './rescource_category.model';
 
 /**
- * 获取类型列表
+ * 获取资源类别列表
  */
 export const getRescourceCategory = async () => {
   const statement = `
     SELECT
-      id, name, arrtId
+      id, name, attrId
     FROM resource_category
     ORDER BY id ASC
   `;
@@ -88,7 +88,7 @@ export const deleteRescourceCategory = async (typeId: number) => {
 };
 
 /**
- * 统计属性类型数量
+ * 统计资源类别数量
  */
 export const getRescourceCategoryTotalCount = async () => {
   // 准备查询

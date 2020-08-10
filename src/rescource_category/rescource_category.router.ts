@@ -5,7 +5,7 @@ import { authGuard, accessControl } from '../auth/auth.middleware';
 const router = express.Router();
 
 /**
- * 类别列表
+ * 资源类别列表
  */
 router.get('/rescource-categorys', rescource_categoryController.index);
 

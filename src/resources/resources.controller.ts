@@ -14,7 +14,7 @@ import {
 import { TagModel } from '../tag/tag.model';
 import { getTagByName, createTag } from '../tag/tag.service';
 /**
- * 内容列表
+ * 资源列表
  */
 export const index = async (
   request: Request,
