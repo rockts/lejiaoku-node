@@ -93,16 +93,16 @@ export const accessControl = (options: AccessControlOptions) => {
     if (userId == 1) return next();
 
     // 准备资源
-    const resourceIdParam = Object.keys(request.params)[0];
-    const resourceType = resourceIdParam.replace('Id', '');
-    const resourceId = parseInt(request.params[resourceIdParam], 10);
+    const libraryIdParam = Object.keys(request.params)[0];
+    const libraryType = libraryIdParam.replace('Id', '');
+    const libraryId = parseInt(request.params[libraryIdParam], 10);
 
     // 检查资源拥有权
     if (possession) {
       try {
-        const ownResource = await possess({ resourceId, resourceType, userId });
+        const ownLibrary = await possess({ libraryId, libraryType, userId });
 
-        if (!ownResource) {
+        if (!ownLibrary) {
           return next(new Error('USER_DOES_NOT_OWN_RESOURCE'));
         }
       } catch (error) {
