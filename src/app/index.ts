@@ -3,6 +3,7 @@ import resourcesRouter from '../resources/resources.router';
 import userRouter from '../user/user.router';
 import authRouter from '../auth/auth.router';
 import coverRouter from '../cover/cover.router';
+import fileRouter from '../file/file.router';
 import tagRouter from '../tag/tag.router';
 import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
@@ -12,6 +13,7 @@ import typeRouter from '../type/type.router';
 import subjectRouter from '../subject/subject.router';
 import gradeRouter from '../grade/grade.router';
 import versionRouter from '../version/version.router';
+import attribute_typeRouter from '../attribute_type/attribute_type.router';
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -32,6 +34,7 @@ app.use(
   userRouter,
   authRouter,
   coverRouter,
+  fileRouter,
   tagRouter,
   avatarRouter,
   commentRouter,
@@ -41,6 +44,7 @@ app.use(
   subjectRouter,
   gradeRouter,
   versionRouter,
+  attribute_typeRouter,
 );
 
 /**
