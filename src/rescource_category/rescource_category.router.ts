@@ -19,7 +19,7 @@ router.post(
  * 更新资源类别
  */
 router.patch(
-  '/rescource-category/:rescource-categoryId',
+  '/rescource-categorys/:categoryId',
   authGuard,
   accessControl({ possession: true }),
   rescource_categoryController.update,
@@ -29,7 +29,7 @@ router.patch(
  *  删除分类
  */
 router.delete(
-  '/rescource-category/:rescource-categoryId',
+  '/rescource-categorys/:categoryId',
   authGuard,
   accessControl({ possession: true }),
   rescource_categoryController.destroy,
