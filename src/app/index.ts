@@ -9,8 +9,7 @@ import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
 import appRouter from './app.router';
-import attribute_typeRouter from '../attribute_type/attribute_type.router';
-import rescource_categoryRouter from "../rescource_category/rescource_category.router";
+import categoryRouter from "../category/category.router";
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -37,8 +36,7 @@ app.use(
   commentRouter,
   likeRouter,
   appRouter,
-  attribute_typeRouter,
-  rescource_categoryRouter
+  categoryRouter
 );
 
 /**
