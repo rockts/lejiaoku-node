@@ -36,7 +36,7 @@ export const index = async (
 };
 
 /**
- * 创建类型
+ * 创建资源类别
  */
 export const store = async (
   request: Request,
@@ -44,14 +44,14 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { name, attrId } = request.body;
+  const { name, attrId } = request.body
 
   try {
-    // 查找类型
-    const arttribute_type = await getRescourceCategoryByName(name);
+    // 查找资源类别
+    const rescource_category = await getRescourceCategoryByName(name);
 
-    // 如果分类存在就报错
-    if (arttribute_type) throw new Error('ARTTRIBUTE_TYPE_ALREADY_EXISTS');
+    // 如果资源类别存在就报错
+    if (rescource_category) throw new Error('RESCOURCE_CATEGORY_ALREADY_EXISTS');
 
     // 存储分类
     const data = await createRescourceCategory({ name, attrId });
