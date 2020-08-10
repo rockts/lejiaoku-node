@@ -10,7 +10,7 @@ import {
 } from './rescource_category.service';
 
 /**
- * 分类列表
+ * 资源类别列表
  */
 export const index = async (
   request: Request,
