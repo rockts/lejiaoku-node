@@ -1,5 +1,5 @@
 import express from 'express';
-import * as rescource_categoryController from './rescource_category.controller';
+import * as categoryController from './category.controller';
 import { authGuard, accessControl } from '../auth/auth.middleware';
 
 const router = express.Router();
@@ -7,32 +7,32 @@ const router = express.Router();
 /**
  * 资源类别列表
  */
-router.get('/rescource-categorys', rescource_categoryController.index);
+router.get('/categorys', categoryController.index);
 
 /**
  * 创建资源类别
  */
 router.post(
-  '/rescource-categorys', authGuard, accessControl({ possession: true }), rescource_categoryController.store);
+  '/categorys', authGuard, accessControl({ possession: true }), categoryController.store);
 
 /**
  * 更新资源类别
  */
 router.patch(
-  '/rescource-categorys/:categoryId',
+  '/categorys/:categoryId',
   authGuard,
   accessControl({ possession: true }),
-  rescource_categoryController.update,
+  categoryController.update,
 );
 
 /**
  *  删除分类
  */
 router.delete(
-  '/rescource-categorys/:categoryId',
+  '/categorys/:categoryId',
   authGuard,
   accessControl({ possession: true }),
-  rescource_categoryController.destroy,
+  categoryController.destroy,
 );
 
 /**

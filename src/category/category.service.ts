@@ -1,15 +1,16 @@
 import { connection } from '../app/database/mysql';
-import { RescourceCategoryModel } from './rescource_category.model';
+import { CategoryModel } from './category.model';
 
 /**
  * 获取资源类别列表
  */
-export const getRescourceCategory = async () => {
+export const getCategory = async () => {
   const statement = `
     SELECT
-      id, name, attrId
-    FROM resource_category
-    ORDER BY id ASC
+    attrId, attr_name, attr_alias,
+    GROUP_CONCAT(name SEPARATOR ',') names
+    FROM category
+    GROUP BY attrId, attr_name, attr_alias
   `;
 
   const [data] = await connection.promise().query(statement);
@@ -20,15 +21,15 @@ export const getRescourceCategory = async () => {
 /**
  * 创建资源类别
  */
-export const createRescourceCategory = async (rescource_category: RescourceCategoryModel) => {
+export const createCategory = async (category: CategoryModel) => {
   // 准备查询
   const statement = `
-    INSERT INTO resource_category
+    INSERT INTO category
     SET ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, rescource_category);
+  const [data] = await connection.promise().query(statement, category);
 
   // 提供数据
   return data as any;
@@ -37,16 +38,16 @@ export const createRescourceCategory = async (rescource_category: RescourceCateg
 /**
  * 按名字查找分类
  */
-export const getRescourceCategoryByName = async (rescourceCategoryName: string) => {
+export const getCategoryByName = async (categoryName: string) => {
   // 准备查询
   const statement = `
     SELECT id, name 
-    FROM resource_category
+    FROM category
     WHERE name = ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, rescourceCategoryName);
+  const [data] = await connection.promise().query(statement, categoryName);
 
   // 提供数据
   return data[0];
@@ -55,16 +56,16 @@ export const getRescourceCategoryByName = async (rescourceCategoryName: string) 
 /**
  * 更新资源类别
  */
-export const updateRescourceCategory = async (rescource_typeId: number, rescourceType: RescourceCategoryModel) => {
+export const updateCategory = async (categoryId: number, category: CategoryModel) => {
   // 准备数据
   const statement = `
-    UPDATE resource_category
+    UPDATE category
     SET ?
     WHERE id = ?
   `;
 
   // 执行
-  const [data] = await connection.promise().query(statement, [rescourceType, rescource_typeId]);
+  const [data] = await connection.promise().query(statement, [category, categoryId]);
 
   // 提供数据
   return data;
@@ -73,10 +74,10 @@ export const updateRescourceCategory = async (rescource_typeId: number, rescourc
 /**
  * 删除分类
  */
-export const deleteRescourceCategory = async (typeId: number) => {
+export const deleteCategory = async (typeId: number) => {
   // 准备数据
   const statement = `
-    DELETE FROM resource_category
+    DELETE FROM category
     WHERE id = ?
   `;
 
@@ -90,12 +91,12 @@ export const deleteRescourceCategory = async (typeId: number) => {
 /**
  * 统计资源类别数量
  */
-export const getRescourceCategoryTotalCount = async () => {
+export const getCategoryTotalCount = async () => {
   // 准备查询
   const statement = `
     SELECT
-      COUNT(DISTINCT resource_category.id) AS total
-    FROM resource_category
+      COUNT(DISTINCT category.id) AS total
+    FROM category
   `;
 
   // 执行查询
