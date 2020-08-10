@@ -64,7 +64,7 @@ export const store = async (
 };
 
 /**
- * 更新分类
+ * 更新资源类别
  */
 export const update = async (
   request: Request,
@@ -72,12 +72,12 @@ export const update = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { typeId } = request.params;
-  const type = _.pick(request.body, ['name']);
+  const { categoryId } = request.params;
+  const rescource_category = _.pick(request.body, ['name', 'attrId']);
 
   // 更新分类
   try {
-    const data = await updateRescourceCategory(parseInt(`${typeId}`, 10), type);
+    const data = await updateRescourceCategory(parseInt(`${categoryId}`, 10), rescource_category);
 
     // 做出响应
     response.send(data);
