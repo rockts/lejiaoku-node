@@ -10,15 +10,10 @@ const router = express.Router();
 router.get('/categorys', categoryController.index);
 
 /**
- * 属性类型列表
- */
-router.get('/categorys/attr', categoryController.index_attr);
-
-/**
  * 创建资源类别
  */
 router.post(
-  '/categorys', authGuard, accessControl({ possession: true }), categoryController.store || categoryController.category_store);
+  '/categorys', authGuard, accessControl({ possession: true }), categoryController.store);
 
 /**
  * 更新资源类别

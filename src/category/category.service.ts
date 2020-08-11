@@ -2,15 +2,13 @@ import { connection } from '../app/database/mysql';
 import { CategoryModel } from './category.model';
 
 /**
- * 获取资源类别列表
+ * 获取分类列表
  */
 export const getCategory = async () => {
   const statement = `
     SELECT
-    attrId, attr_name, attr_alias,
-    GROUP_CONCAT(name SEPARATOR ',') names
+      id, name
     FROM category
-    GROUP BY attrId, attr_name, attr_alias
   `;
 
   const [data] = await connection.promise().query(statement);
@@ -19,26 +17,9 @@ export const getCategory = async () => {
 };
 
 /**
- * 获取属性类型列表
- * @param attr 
+ * 创建分类
  */
-export const getAttr = async () => {
-  const statement = `
-    SELECT
-    attrId, attr_name, attr_alias
-    FROM category
-    GROUP BY attrId, attr_name, attr_alias
-  `;
-
-  const [data] = await connection.promise().query(statement);
-
-  return data;
-};
-
-/**
- * 创建属性类型
- */
-export const createAttr = async (attr: CategoryModel) => {
+export const createCategory = async (category: CategoryModel) => {
   // 准备查询
   const statement = `
     INSERT INTO category
@@ -46,7 +27,7 @@ export const createAttr = async (attr: CategoryModel) => {
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, attr);
+  const [data] = await connection.promise().query(statement, category);
 
   // 提供数据
   return data as any;
