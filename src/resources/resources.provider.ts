@@ -65,9 +65,8 @@ export const sqlFragment = {
         COUNT(file.id),
         GROUP_CONCAT(
           DISTINCT JSON_OBJECT(
-            'id', file.id,
-            'width', file.width,
-            'height', file.height
+            "id", file.id,
+            "mimetype", file.mimetype
           )
         ),
         NULL
