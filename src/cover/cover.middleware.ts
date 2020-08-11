@@ -95,6 +95,7 @@ export const deleteResourcesCover = async (
   } else {
     // 删除文件
     fs.unlink(`uploads/cover/${cover.filename}`, error => {
+      if (error) throw error;
       console.log(`${cover.filename}`, '文件已被删除');
     });
 

@@ -31,11 +31,11 @@ router.delete(
 );
 
 /**
- * 文件服务
- */ router.get('/covers/:coverId/serve', coverController.serve);
+ * cover serve
+ */ router.get('/covers/:coverId', coverController.serve);
 
 /**
- * 文件信息
+ * cover metadat
  */
 router.get('/covers/:coverId/metadata', coverController.metadata);
 
