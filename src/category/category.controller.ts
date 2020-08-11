@@ -44,7 +44,7 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { name } = request.body;
+  const { name, alias } = request.body;
 
   try {
     // 查找分类
@@ -54,7 +54,7 @@ export const store = async (
     if (category) throw new Error('CATEGORY_ALREADY_EXISTS');
 
     // 存储分类
-    const data = await createCategory({ name });
+    const data = await createCategory({ name, alias });
 
     // 做出响应
     response.status(201).send(data);
@@ -73,7 +73,7 @@ export const update = async (
 ) => {
   // 准备数据
   const { categoryId } = request.params;
-  const category = _.pick(request.body, ['name', 'attrId', 'attr_name', 'attr_alias']);
+  const category = _.pick(request.body, ['name', 'alias']);
 
   // 更新分类
   try {
