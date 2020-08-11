@@ -78,7 +78,7 @@ export const update = async (
   const { resourcesId } = request.params;
 
   // 准备数据
-  const resources = _.pick(request.body, ['title', 'description']);
+  const resources = _.pick(request.body, ['title', 'description', 'categoryId', 'grade', 'subject', 'version']);
 
   // 更新
   try {
