@@ -7,7 +7,7 @@ import { CategoryModel } from './category.model';
 export const getCategory = async () => {
   const statement = `
     SELECT
-      id, name
+      id, name, alias
     FROM category
   `;
 
@@ -39,52 +39,13 @@ export const createCategory = async (category: CategoryModel) => {
 export const getCategoryByName = async (categoryName: string) => {
   // 准备查询
   const statement = `
-    SELECT id, name 
+    SELECT id, name, alias
     FROM category
     WHERE name = ?
   `;
 
   // 执行查询
   const [data] = await connection.promise().query(statement, categoryName);
-
-  // 提供数据
-  return data[0];
-};
-
-/**
- * 按名字查找属性类型
- * @param AttrName
- */
-export const getAttrByName = async (attrName: string) => {
-  // 准备查询
-  const statement = `
-    SELECT attrId, attr_name
-    FROM category
-    WHERE attr_name = ?
-  `;
-
-  // 执行查询
-  const [data] = await connection.promise().query(statement, attrName);
-
-  // 提供数据
-  return data[0];
-};
-
-
-/**
- * 按 ID 查找 attr
- * @param categoryId 
- * @param category 
- */
-export const findAttrById = async (AttrId: number) => {
-  // 准备查询
-  const statement = `
-    SELECT * FROM category
-    WHERE attId = ?
-  `;
-
-  // 执行查询
-  const [data] = await connection.promise().query(statement, AttrId);
 
   // 提供数据
   return data[0];
@@ -133,24 +94,6 @@ export const getCategoryTotalCount = async () => {
   const statement = `
     SELECT
       COUNT(DISTINCT category.id) AS total
-    FROM category
-  `;
-
-  // 执行查询
-  const [data] = await connection.promise().query(statement);
-
-  // 提供结果
-  return data[0].total;
-};
-
-/**
- * 统计属性类型数据
- */
-export const getAttrTotalCount = async () => {
-  // 准备查询
-  const statement = `
-    SELECT
-     COUNT(DISTINCT category.attrId) AS total
     FROM category
   `;
 
