@@ -71,13 +71,9 @@ export const defaultErrorHandler = (
       statusCode = 400;
       message = '标签已存在';
       break;
-    case 'ATTR_ALREADY_EXISTS':
-      statusCode = 400;
-      message = '属性类型已存在';
-      break;
     case 'CATEGORY_ALREADY_EXISTS':
       statusCode = 400;
-      message = '类别已存在';
+      message = '类型已存在';
       break;
     case 'SUBJECT_ALREADY_EXISTS':
       statusCode = 400;
