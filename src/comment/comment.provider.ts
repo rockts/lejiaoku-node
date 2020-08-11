@@ -15,15 +15,15 @@ export const sqlFragment = {
       'avatar', IF(COUNT(avatar.id), 1, NULL)
     ) AS user
   `,
-  leftJoinPost: `
-    LEFT JOIN post
-      ON post.id = comment.postId
+  leftJoinResources: `
+    LEFT JOIN resources
+      ON resources.id = comment.resourcesId
   `,
-  post: `
+  resources: `
     JSON_OBJECT(
-      'id', post.id,
-      'title', post.title
-    ) AS post
+      'id', resources.id,
+      'title', resources.title
+    ) AS resources
   `,
   repliedComment: `
     (

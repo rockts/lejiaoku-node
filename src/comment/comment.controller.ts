@@ -19,11 +19,11 @@ export const store = async (
 ) => {
   // 准备数据
   const { id: userId } = request.user;
-  const { content, postId } = request.body;
+  const { content, resourcesId } = request.body;
 
   const comment = {
     content,
-    postId,
+    resourcesId,
     userId,
   };
 
@@ -50,11 +50,11 @@ export const reply = async (
   const { commentId } = request.params;
   const parentId = parseInt(commentId, 10);
   const { id: userId } = request.user;
-  const { content, postId } = request.body;
+  const { content, resourcesId } = request.body;
 
   const comment = {
     content,
-    postId,
+    resourcesId,
     userId,
     parentId,
   };
@@ -123,7 +123,7 @@ export const destroy = async (
 
     // 做出响应
     response.send(data);
-  } catch (error) {}
+  } catch (error) { }
 };
 
 /**

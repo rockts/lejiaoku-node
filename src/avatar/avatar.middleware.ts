@@ -2,29 +2,29 @@ import path from 'path';
 import Jimp from 'jimp';
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-// import { coverFilter } from '../cover/cover.middleware';
+import { coverFilter } from '../cover/cover.middleware';
 
-// /**
-//  * 文件过滤器
-//  */
-// const avatarUploadFilter = coverFilter([
-//   'image/png',
-//   'image/jpg',
-//   'image/jpeg',
-// ]);
+/**
+ * 文件过滤器
+ */
+const avatarUploadFilter = coverFilter([
+  'image/png',
+  'image/jpg',
+  'image/jpeg',
+]);
 
-// /**
-//  * 创建一个 Multer
-//  */
-// const avatarUpload = multer({
-//   dest: 'uploads/avatar',
-//   fileFilter: avatarUploadFilter,
-// });
+/**
+ * 创建一个 Multer
+ */
+const avatarUpload = multer({
+  dest: 'uploads/avatar',
+  fileFilter: avatarUploadFilter,
+});
 
 /**
  * 文件拦截器
  */
-// export const avatarInterceptor = avatarUpload.single('avatar');
+export const avatarInterceptor = avatarUpload.single('avatar');
 
 /**
  * 头像处理器

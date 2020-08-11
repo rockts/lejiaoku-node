@@ -41,22 +41,19 @@ export const getResources = async (options: GetResourcesOptions) => {
     SELECT
       resources.id,
       resources.title,
+      resources.grade,
       resources.description,
-      ${sqlFragment.grade},
-      ${sqlFragment.subject},
-      ${sqlFragment.type},
-      ${sqlFragment.version},
+      resources.subject,
+      resources.version,
+      ${sqlFragment.cover},
       ${sqlFragment.user},
       ${sqlFragment.totalComments},
       ${sqlFragment.file},
       ${sqlFragment.tags},
-      ${sqlFragment.totalLikes}
+      ${sqlFragment.totalLikes},
     FROM resources
     ${sqlFragment.leftJoinUser}
-    ${sqlFragment.leftJoinGrade}
-    ${sqlFragment.leftJoinSuject}
-    ${sqlFragment.leftJoinType}
-    ${sqlFragment.leftJoinVersion}
+    ${sqlFragment.leftJoinOneCover}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
     ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikeResources : ''}

@@ -1,7 +1,7 @@
 export class CommentModel {
   id?: number;
   content?: string;
-  postId?: number;
+  resourcesId?: number;
   userId?: number;
   parentId?: number;
 }

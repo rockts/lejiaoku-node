@@ -23,15 +23,15 @@ export const createFile = async (file: FileModel) => {
 /**
  * 按资源获取 type ID
  */
-export const findResourcesTypeId = async (typeId: number) => {
+export const findResourcesTypeId = async (categoryId: number) => {
   // 准备查询
   const statement = `
-    SELECT typeId FROM resources
+    SELECT categoryId FROM resources
     WHERE id = ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, typeId);
+  const [data] = await connection.promise().query(statement, categoryId);
 
   // 提供数据
   return data;

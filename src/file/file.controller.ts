@@ -36,8 +36,7 @@ export const store = async (
     const data = await createFile({
       ...fileInfo,
       userId,
-      resourcesId,
-      typeId,
+      resourcesId
     });
 
     console.log(typeId);
