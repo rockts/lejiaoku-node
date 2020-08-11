@@ -3,7 +3,8 @@ export class ResourcesModel {
   title?: string;
   description?: string;
   userId?: number;
-  gradeId?: number;
-  subjectId?: number;
-  typeId?: number;
+  grade?: string;
+  subject?: string;
+  version?: string
+  categoryId?: number;
 }

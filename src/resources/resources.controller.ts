@@ -54,12 +54,12 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { title, description } = request.body;
+  const { title, description, categoryId, grade, subject, version } = request.body;
   const { id: userId } = request.user;
 
   // 创建内容
   try {
-    const data = await createResources({ title, description, userId });
+    const data = await createResources({ title, description, userId, categoryId, grade, subject, version });
     response.status(201).send(data);
   } catch (error) {
     next(error);

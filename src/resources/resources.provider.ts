@@ -2,52 +2,36 @@
  * 查询片断
  */
 export const sqlFragment = {
-  grade: `
-    JSON_OBJECT(
-      'id', grade.id,
-      'name', grade.name
-    ) as grade
+  cover: `
+    CAST(
+      IF(
+        COUNT(cover.id),
+        GROUP_CONCAT(
+          DISTINCT JSON_OBJECT(
+            'id', cover.id,
+            'width', cover.width,
+            'height', cover.height
+          )
+        ),
+        NULL
+      ) AS JSON
+    ) AS cover
   `,
-  leftJoinGrade: `
-    LEFT JOIN grade
-      ON grade.id = resources.gradeId
-  `,
-  type: `
-    JSON_OBJECT(
-      'id', type.id,
-      'name', type.name
-    ) as type
-  `,
-  leftJoinType: `
-    LEFT JOIN type
-      ON type.id = resources.typeId
-  `,
-  subject: `
-    JSON_OBJECT(
-      'id', subject.id,
-      'name', subject.name
-    ) as subject
-  `,
-  leftJoinSuject: `
-    LEFT JOIN subject
-      ON subject.id = resources.subjectId
-  `,
-  version: `
-  JSON_OBJECT(
-    'id', version.id,
-    'name', version.name
-  ) as version
-  `,
-  leftJoinVersion: `
-  LEFT JOIN version
-    ON version.id = resources.versionId
+  leftJoinOneCover: `
+    LEFT JOIN LATERAL (
+      SELECT *
+      FROM cover
+      WHERE cover.resourcesId = resources.id
+      ORDER BY cover.id DESC
+      LIMIT 1
+    ) AS cover ON resourcesid = cover.resourcesId
   `,
   user: `
-    JSON_OBJECT(
-      'id', user.id,
-      'name', user.name,
-      'avatar', IF(COUNT(avatar.id), 1, null)
-    ) as user
+    JSON_OBJECT (
+      "id", user.id,
+      "name", user.name,
+      "avatar", IF(COUNT(avatar.id), 1, null)
+    ) As user,
   `,
   leftJoinUser: `
     LEFT JOIN user

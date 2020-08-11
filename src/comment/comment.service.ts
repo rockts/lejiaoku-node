@@ -107,13 +107,13 @@ export const getComments = async (options: GetCommentsOptions) => {
       comment.id,
       comment.content,
       ${sqlFragment.user},
-      ${sqlFragment.post}
+      ${sqlFragment.resources}
       ${filter.name == 'userReplied' ? `, ${sqlFragment.repliedComment}` : ''}
       ${filter.name !== 'userReplied' ? `, ${sqlFragment.totalReplies}` : ''}
     FROM
       comment
     ${sqlFragment.leftJoinUser}
-    ${sqlFragment.leftJoinPost}
+    ${sqlFragment.leftJoinResources}
     WHERE
       ${filter.sql}
     GROUP BY
@@ -155,7 +155,7 @@ export const getCommentsTotalCount = async (options: GetCommentsOptions) => {
     FROM
       comment
     ${sqlFragment.leftJoinUser}
-    ${sqlFragment.leftJoinPost}
+    ${sqlFragment.leftJoinResources}
     WHERE
       ${filter.sql}
   `;
