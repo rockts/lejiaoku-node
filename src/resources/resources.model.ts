@@ -5,6 +5,6 @@ export class ResourcesModel {
   userId?: number;
   grade?: string;
   subject?: string;
-  version?: string
+  version?: string;
   categoryId?: number;
 }

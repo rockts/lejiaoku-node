@@ -2,6 +2,19 @@
  * 查询片断
  */
 export const sqlFragment = {
+  user: `
+    JSON_OBJECT (
+      "id", user.id,
+      "name", user.name,
+      "avatar", IF(COUNT(avatar.id), 1, null)
+    ) AS user
+  `,
+  leftJoinUser: `
+    LEFT JOIN user
+      ON user.id = resources.userId
+    LEFT JOIN avatar
+      ON user.id = avatar.userId
+  `,
   cover: `
     CAST(
       IF(
@@ -20,24 +33,12 @@ export const sqlFragment = {
   leftJoinOneCover: `
     LEFT JOIN LATERAL (
       SELECT *
-      FROM cover
+      FROM 
+        cover
       WHERE cover.resourcesId = resources.id
       ORDER BY cover.id DESC
       LIMIT 1
-    ) AS cover ON resourcesid = cover.resourcesId
-  `,
-  user: `
-    JSON_OBJECT (
-      "id", user.id,
-      "name", user.name,
-      "avatar", IF(COUNT(avatar.id), 1, null)
-    ) As user,
-  `,
-  leftJoinUser: `
-    LEFT JOIN user
-      ON user.id = resources.userId
-    LEFT JOIN avatar
-      ON user.id = avatar.userId
+    ) AS cover ON resources.id = cover.resourcesId
   `,
   totalComments: `
     (
@@ -47,7 +48,7 @@ export const sqlFragment = {
         comment
       WHERE
         comment.resourcesId = resources.id
-    ) as totalComments
+    ) AS totalComments
   `,
   leftJoinOneFile: `
     LEFT JOIN LATERAL (
@@ -56,7 +57,7 @@ export const sqlFragment = {
       WHERE file.resourcesId = resources.id
       ORDER BY file.id DESC
       LIMIT 1
-    ) AS file ON resourcesid = file.resourcesId
+    ) AS file ON resources.id = file.resourcesId
   `,
   file: `
     CAST(
