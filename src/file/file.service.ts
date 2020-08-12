@@ -1,5 +1,3 @@
-import path from 'path';
-import Jimp from 'jimp';
 import { connection } from '../app/database/mysql';
 import { FileModel } from './file.model';
 
@@ -10,7 +8,7 @@ export const createFile = async (file: FileModel) => {
   // 准备查询
   const statement = `
     INSERT INTO file
-    SET id  ?
+    SET ?
   `;
 
   // 执行查询
@@ -20,23 +18,25 @@ export const createFile = async (file: FileModel) => {
   return data;
 };
 
-/**
- * 按资源获取 type ID
- */
-export const findResourcesTypeId = async (typeId: number) => {
-  // 准备查询
-  const statement = `
-    SELECT typeId FROM resources
-    WHERE id = ?
-  `;
+// /**
+//  * 按资源获取 type ID
+//  */
+// export const findResourcesCategoryId = async (CategoryId: number) => {
+//   // 准备查询
+//   const statement = `
+//     SELECT categoryId FROM resources
+//     WHERE id = ?
+//   `;
 
-  // 执行查询
-  const [data] = await connection.promise().query(statement, typeId);
+//   // 执行查询
+//   const [data] = await connection.promise().query(statement, CategoryId);
 
-  // 提供数据
-  return data;
+//   // 提供数据
+//   return data;
 
-}
+//   console.log(data);
+
+// };
 
 /**
  * 按 ID 查找文件

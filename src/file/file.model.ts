@@ -6,5 +6,5 @@ export class FileModel {
   size: number;
   userId: number;
   resourcesId?: number;
-  typeId?: number;
+  categoryId?: number;
 }
