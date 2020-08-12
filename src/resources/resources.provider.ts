@@ -15,6 +15,15 @@ export const sqlFragment = {
     LEFT JOIN avatar
       ON user.id = avatar.userId
   `,
+  category: `
+    (
+      SELECT
+        category.name
+      FROM
+        category
+      WHERE category.id = resources.categoryId
+    ) AS category
+  `,
   cover: `
     CAST(
       IF(
