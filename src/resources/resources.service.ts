@@ -51,7 +51,7 @@ export const getResources = async (options: GetResourcesOptions) => {
       ${sqlFragment.totalComments},
       ${sqlFragment.file},
       ${sqlFragment.tags},
-      ${sqlFragment.totalLikes},
+      ${sqlFragment.totalLikes}
     FROM resources
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneCover}
