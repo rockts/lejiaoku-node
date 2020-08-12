@@ -28,9 +28,10 @@ const fileUploadFilter = fileFilter([
   'image/png',
   'image/jpg',
   'image/jpeg',
-  'application / vnd.openxmlformats - officedocument.spreadsheetml.sheet',
-  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/pdf',
 ]);
 
 /**
@@ -57,4 +58,9 @@ export const fileProcessor = async (
   // 文件路径
   const { path } = request.file;
 
+  console.log('📁 文件上传成功');
+
+  // 下一步
+  next();
 }
+

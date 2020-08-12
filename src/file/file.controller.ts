@@ -1,8 +1,6 @@
-import path from 'path';
-import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import { createFile, findFileById, findResourcesTypeId } from './file.service';
+import { createFile, findFileById } from './file.service';
 
 /**
  * 上传文件
@@ -18,9 +16,6 @@ export const store = async (
   // 所属内容
   const { resources: resourcesId } = request.query;
 
-  // 所属分类
-  const { type: typeId } = request.query;
-
   // 文件信息
   const fileInfo = _.pick(request.file, [
     'originalname',
@@ -29,7 +24,6 @@ export const store = async (
     'size',
   ]);
 
-  const type = findResourcesTypeId(parseInt(typeId, 10));
 
   try {
     // 保存文件信息
@@ -37,11 +31,7 @@ export const store = async (
       ...fileInfo,
       userId,
       resourcesId,
-      typeId,
     });
-
-    console.log(typeId);
-
 
     // 做出响应
     response.status(201).send(data);
@@ -67,7 +57,7 @@ export const serve = async (
 
     // 文件名与目录
     let filename = file.filename;
-    let root = 'uploads';
+    let root = 'uploads/files';
     let resized = 'resized';
 
 
@@ -99,7 +89,7 @@ export const metadata = async (
     const file = await findFileById(parseInt(fileId, 10));
 
     // 准备响应数据
-    const data = _.pick(file, ['id', 'size', 'metadata']);
+    const data = _.pick(file, ['id', 'size', 'mimetype', 'resourcesId', 'userId']);
 
     // 做出响应
     response.send(data);
