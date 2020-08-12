@@ -19,7 +19,7 @@ router.post(
 /**
  * 文件服务
  */
-router.get('/files/:fileId/serve', fileController.serve);
+router.get('/files/:fileId/', fileController.serve);
 
 /**
  * 文件信息
