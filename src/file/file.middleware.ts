@@ -32,6 +32,7 @@ const fileUploadFilter = fileFilter([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/pdf',
+  'application/msword'
 ]);
 
 /**
