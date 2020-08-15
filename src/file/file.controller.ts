@@ -89,7 +89,7 @@ export const metadata = async (
     const file = await findFileById(parseInt(fileId, 10));
 
     // 准备响应数据
-    const data = _.pick(file, ['id', 'size', 'mimetype', 'resourcesId', 'userId']);
+    const data = _.pick(file, ['id', 'filename', 'size', 'mimetype', 'resourcesId', 'userId']);
 
     // 做出响应
     response.send(data);
