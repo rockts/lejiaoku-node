@@ -133,7 +133,7 @@ export const metadata = async (
     const cover = await findCoverById(parseInt(coverId, 10));
 
     // 准备响应数据
-    const data = _.pick(cover, ['id', 'filename', 'size', 'width', 'height']);
+    const data = _.pick(cover, ['id', 'filename', 'mimetype', 'size', 'width', 'height']);
 
     // 做出响应
     response.send(data);
