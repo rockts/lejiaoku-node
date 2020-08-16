@@ -1,7 +1,7 @@
 import express from 'express';
 import * as avatarController from './avatar.controller';
 import { authGuard } from '../auth/auth.middleware';
-import { avatarInterceptor, avatarProcessor } from './avatar.middleware';
+import { avatarInterceptor, avatarProcessor, deleteUserAvatar } from './avatar.middleware';
 
 const router = express.Router();
 
@@ -15,6 +15,17 @@ router.post(
   avatarProcessor,
   avatarController.store,
 );
+
+/**
+ * 删除头像
+ */
+router.delete(
+  '/avatar/:avatarId',
+  authGuard,
+  deleteUserAvatar,
+  avatarController.destroy
+);
+
 
 /**
  * 头像服务

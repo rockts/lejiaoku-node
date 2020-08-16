@@ -19,7 +19,7 @@ export const createAvatar = async (avatar: AvatarModel) => {
 };
 
 /**
- * 按用户 ID 查找 头像
+ * 按用户 ID 查找头像
  */
 export const findAvatarByUserId = async (userId: number) => {
   // 准备查询
@@ -36,4 +36,39 @@ export const findAvatarByUserId = async (userId: number) => {
 
   // 提供数据
   return data[0];
+};
+
+/**
+ * 按 ID 查找头像
+ */
+export const findAvatarById = async (avatarId: number) => {
+  // 准备查询
+  const statement = `
+    SELECT *FROM avatar
+    WHERE id = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement, avatarId);
+
+  // 提供数据
+  return data[0];
+
+};
+
+/**
+ * 删除头像
+ */
+export const deleteAvatar = async (avatarId: number) => {
+  // 准备查询
+  const statement = `
+    DELETE FROM avatar
+    WHERE id = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement, avatarId);
+
+  // 提供数据
+  return data;
 };

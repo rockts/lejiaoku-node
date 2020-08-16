@@ -38,9 +38,9 @@ export const deleteCover = async (coverId: number) => {
 };
 
 /**
- * 按 ID 查找文件
+ * 按 ID 查找封面
  */
-export const findCoverById = async (CoverId: number) => {
+export const findCoverById = async (coverId: number) => {
   // 准备查询
   const statement = `
     SELECT * FROM cover
@@ -48,7 +48,7 @@ export const findCoverById = async (CoverId: number) => {
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, CoverId);
+  const [data] = await connection.promise().query(statement, coverId);
 
   // 提供数据
   return data[0];

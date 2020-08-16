@@ -96,22 +96,22 @@ export const deleteResourcesCover = async (
     // 删除文件
     fs.unlink(`uploads/cover/${cover.filename}`, error => {
       if (error) throw error;
-      console.log(`${cover.filename}`, '文件已被删除');
+      console.log(`${cover.filename}`, '封面已被删除');
     });
 
     fs.unlink(`uploads/cover/resized/${cover.filename}-thumbnail`, error => {
       if (error) throw error;
-      console.log(`${cover.filename}-thumbnail`, '文件已被删除');
+      console.log(`${cover.filename}-thumbnail`, '封面已被删除');
     });
 
     fs.unlink(`uploads/cover/resized/${cover.filename}-medium`, error => {
       if (error) throw error;
-      console.log(`${cover.filename}-medium`, '文件已被删除');
+      console.log(`${cover.filename}-medium`, '封面已被删除');
     });
 
     fs.unlink(`uploads/cover/resized/${cover.filename}-large`, error => {
       if (error) throw error;
-      console.log(`${cover.filename}-large`, '文件已被删除');
+      console.log(`${cover.filename}-large`, '封面已被删除');
     });
   }
 
