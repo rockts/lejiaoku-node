@@ -10,6 +10,11 @@ import { authGuard } from '../auth/auth.middleware';
 const router = express.Router();
 
 /**
+ * 用户列表
+ */
+router.get('/users/', userController.index);
+
+/**
  * 创建用户
  */
 router.post('/users', validateUserData, hashPassword, userController.store);

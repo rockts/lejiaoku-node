@@ -1,6 +1,32 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import { deleteUser, createUser, updateUser, getUserById } from './user.service';
+import { deleteUser, createUser, updateUser, getUserList, getUserById, getUserTotalCount } from './user.service';
+
+/**
+ * 用户列表
+ */
+export const index = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    // 统计用户数量
+    const totalCount = await getUserTotalCount();
+
+    // 设置响应头部
+    response.header('X-Total-Count', totalCount)
+  } catch (error) {
+    next(error)
+  }
+
+  try {
+    const user = await getUserList();
+    response.send(user);
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * 创建用户

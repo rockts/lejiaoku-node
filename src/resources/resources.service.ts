@@ -191,7 +191,7 @@ export const deleteResourcesTag = async (
 };
 
 /**
- * 统计内容数量
+ * 统计资源数量
  */
 export const getResourcesTotalCount = async (options: GetResourcesOptions) => {
   const { filter } = options;
