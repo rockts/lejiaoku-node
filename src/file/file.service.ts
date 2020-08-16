@@ -1,3 +1,5 @@
+import path from 'path';
+import Jimp from 'jimp';
 import { connection } from '../app/database/mysql';
 import { FileModel } from './file.model';
 
@@ -18,25 +20,23 @@ export const createFile = async (file: FileModel) => {
   return data;
 };
 
-// /**
-//  * 按资源获取 type ID
-//  */
-// export const findResourcesCategoryId = async (CategoryId: number) => {
-//   // 准备查询
-//   const statement = `
-//     SELECT categoryId FROM resources
-//     WHERE id = ?
-//   `;
+/**
+ * 删除文件
+ * @param fileId 
+ */
+export const deleteFile = async (fileId: number) => {
+  // 准备查询
+  const statement = `
+    DELETE FROM file
+    WHERE id = ?
+  `;
 
-//   // 执行查询
-//   const [data] = await connection.promise().query(statement, CategoryId);
+  // 执行查询
+  const [data] = await connection.promise().query(statement, fileId);
 
-//   // 提供数据
-//   return data;
-
-//   console.log(data);
-
-// };
+  // 提供数据
+  return data;
+};
 
 /**
  * 按 ID 查找文件
