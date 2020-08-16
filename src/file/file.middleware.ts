@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import multer, { FileFilterCallback } from 'multer';
+import fs from 'fs';
+import { findFileById } from './file.service';
 
 
 /**
@@ -63,5 +65,30 @@ export const fileProcessor = async (
 
   // 下一步
   next();
-}
+};
+
+/**
+ * 删除资源文件
+ */
+export const deleteResourcesFile = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取文件 ID
+  const { fileId } = request.params;
+  const file = await findFileById(parseInt(fileId, 10));
+
+  if (!file) {
+    next(new Error('FILE_NOT_FOUND'))
+  } else {
+    // 删除文件
+    fs.unlink(`uploads/files/${file.filename}`, error => {
+      console.log(`${file.filename}`, '文件已被删除');
+    });
+  }
+
+  // 下一步
+  next();
+};
 
