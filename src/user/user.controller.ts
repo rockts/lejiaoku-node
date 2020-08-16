@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import * as userService from './user.service';
+import { deleteUser, createUser, updateUser, getUserById } from './user.service';
 
 /**
  * 创建用户
@@ -15,7 +15,7 @@ export const store = async (
 
   // 创建用户
   try {
-    const data = await userService.createUser({ name, password, email });
+    const data = await createUser({ name, password, email });
     response.status(201).send(data);
   } catch (error) {
     next(error);
@@ -35,7 +35,7 @@ export const show = async (
 
   // 调取用户
   try {
-    const user = await userService.getUserById(parseInt(userId, 10));
+    const user = await getUserById(parseInt(userId, 10));
 
     if (!user) {
       return next(new Error('USER_NOT_FOUND'));
@@ -62,10 +62,34 @@ export const update = async (
 
   // 更新用户
   try {
-    const data = await userService.updateUser(id, userData);
+    const data = await updateUser(id, userData);
 
     // 做出响应
     response.send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 删除用户
+ */
+export const destroy = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 准备数据
+  const { userId } = request.params;
+
+  // 删除用户
+  try {
+
+    const data = await deleteUser(parseInt(userId, 10));
+
+    // 做出响应
+    response.send(data);
+
   } catch (error) {
     next(error);
   }
