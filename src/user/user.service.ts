@@ -29,7 +29,7 @@ interface GetUserOptions {
 export const getUser = (condition: string) => {
   return async (param: string | number, options: GetUserOptions = {}) => {
     // 准备选项
-    const { password } = options;
+    const { password, email } = options;
 
     // 准备查询
     const statement = `
@@ -41,6 +41,7 @@ export const getUser = (condition: string) => {
           COUNT(avatar.id), 1, NULL
         ) AS avatar
         ${password ? ', password' : ''}
+        ${email ? ', email' : ''}
       FROM
         user
       LEFT JOIN avatar

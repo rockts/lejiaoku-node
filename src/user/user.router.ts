@@ -30,6 +30,11 @@ router.patch(
 );
 
 /**
+ * 删除用户
+ */
+router.delete('/users/:userId', authGuard, userController.destroy);
+
+/**
  * 导出路由
  */
 export default router;
