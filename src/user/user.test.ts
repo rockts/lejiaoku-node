@@ -5,6 +5,7 @@ import { connection } from '../app/database/mysql';
 import { signToken } from '../auth/auth.service';
 import { deleteUser, getUserById } from './user.service';
 import { UserModel } from './user.model';
+import { createUserLikeResources } from '../like/like.service';
 
 /**
  * 准备测试
@@ -12,11 +13,13 @@ import { UserModel } from './user.model';
 const testUser: UserModel = {
   name: 'xb2-test-user-name',
   password: '111111',
+  email: 'test@lekee.cc',
 };
 
 const testUserUpdated: UserModel = {
   name: 'xb2-test-user-new-name',
   password: '222222',
+  email: 'test@lekee.cc',
 };
 
 let testUserCreated: UserModel;

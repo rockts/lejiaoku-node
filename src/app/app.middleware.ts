@@ -43,6 +43,10 @@ export const defaultErrorHandler = (
       statusCode = 409;
       message = '用户名已被占用';
       break;
+    case 'EMAIL_ALREADY_EXIST':
+      statusCode = 409;
+      message = '邮箱已被占用';
+      break;
     case 'USER_DOES_NOT_EXIST':
       statusCode = 400;
       message = '用户不存在';
@@ -122,6 +126,10 @@ export const defaultErrorHandler = (
     case 'USER_NOT_FOUND':
       statusCode = 404;
       message = '没找到这个用户 ~~';
+      break;
+    case 'PASSWORD_IS_THE_SAME':
+      statusCode = 400;
+      message = '要修改的密码不能与原密码一样';
       break;
     case 'PASSWORD_IS_THE_SAME':
       statusCode = 400;
