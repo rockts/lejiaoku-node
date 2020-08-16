@@ -63,6 +63,10 @@ export const defaultErrorHandler = (
       statusCode = 404;
       message = '封面不存在';
       break;
+    case 'FILE_NOT_FOUND':
+      statusCode = 404;
+      message = '文件不存在';
+      break;
     case 'COVER_NOT_SIZE':
       statusCode = 404;
       message = '请重新上传';
