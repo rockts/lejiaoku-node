@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import { createFile, findFileById } from './file.service';
+import { createFile, deleteFile, findFileById } from './file.service';
 
 /**
  * 上传文件
@@ -35,6 +35,26 @@ export const store = async (
 
     // 做出响应
     response.status(201).send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 删除文件
+ */
+export const destroy = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取文件 ID
+  const { fileId } = request.params;
+
+  // 删除封面
+  try {
+    const data = await deleteFile(parseInt(fileId, 10));
+    response.send(data);
   } catch (error) {
     next(error);
   }
