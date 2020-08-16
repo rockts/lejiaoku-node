@@ -3,6 +3,8 @@ import Jimp from 'jimp';
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { coverFilter } from '../cover/cover.middleware';
+import { findAvatarById } from './avatar.service';
+import fs from 'fs';
 
 /**
  * 文件过滤器
@@ -60,6 +62,49 @@ export const avatarProcessor = async (
       .write(`${filePath}-small`);
   } catch (error) {
     next(error);
+  }
+
+  console.log('👤 头像上传成功');
+
+  // 下一步
+  next();
+};
+
+/**
+ * 删除头像文件
+ */
+export const deleteUserAvatar = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取头像 ID
+  const { avatarId } = request.params;
+  const avatar = await findAvatarById(parseInt(avatarId, 10));
+
+  if (!avatar) {
+    next(new Error('AVARAR_NOT_FOUND'))
+  } else {
+    // 删除文件
+    fs.unlink(`uploads/avatar/${avatar.filename}`, error => {
+      if (error) throw error;
+      console.log(`${avatar.filename}`, '头像已被删除');
+    });
+
+    fs.unlink(`uploads/avatar/resized/${avatar.filename}-small`, error => {
+      if (error) throw error;
+      console.log(`${avatar.filename}-small`, '头像已被删除');
+    });
+
+    fs.unlink(`uploads/avatar/resized/${avatar.filename}-medium`, error => {
+      if (error) throw error;
+      console.log(`${avatar.filename}-medium`, '头像已被删除');
+    });
+
+    fs.unlink(`uploads/avatar/resized/${avatar.filename}-large`, error => {
+      if (error) throw error;
+      console.log(`${avatar.filename}-large`, '头像已被删除');
+    });
   }
 
   // 下一步

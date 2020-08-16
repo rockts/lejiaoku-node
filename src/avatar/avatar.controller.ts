@@ -2,8 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
-import { createAvatar, findAvatarByUserId } from './avatar.service';
-import { avatarProcessor } from './avatar.middleware';
+import { createAvatar, deleteAvatar, findAvatarByUserId } from './avatar.service';
 
 /**
  * 上传头像
@@ -31,6 +30,26 @@ export const store = async (
 
     // 做出响应
     response.status(201).send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 删除头像
+ */
+export const destroy = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取用户 ID
+  const { avatarId } = request.params;
+
+  // 删除头像
+  try {
+    const data = await deleteAvatar(parseInt(avatarId, 10));
+    response.send(data);
   } catch (error) {
     next(error);
   }
