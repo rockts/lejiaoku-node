@@ -85,6 +85,15 @@ export const validateUpdateUserData = async (
       }
     }
 
+    // 处理用户邮箱是否占用
+    if (update.email) {
+      const user = await userService.getUserByEmail(update.email);
+
+      if (user) {
+        return next(new Error('EMAIL_ALREADY_EXIST'));
+      }
+    }
+
     // 处理用户更新密码
     if (update.password) {
       const matched = await bcrypt.compare(update.password, user.password);

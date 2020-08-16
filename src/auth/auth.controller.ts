@@ -11,17 +11,17 @@ export const login = async (
 ) => {
   // 准备数据
   const {
-    user: { id, name },
+    user: { id, name, email },
   } = request.body;
 
-  const payload = { id, name };
+  const payload = { id, name, email };
 
   try {
     // 签发令牌
     const token = signToken({ payload });
 
     // 做出响应
-    response.send({ id, name, token });
+    response.send({ id, name, email, token });
   } catch (error) {
     next(error);
   }

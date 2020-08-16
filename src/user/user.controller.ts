@@ -11,11 +11,11 @@ export const store = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { name, password } = request.body;
+  const { name, password, email } = request.body;
 
   // 创建用户
   try {
-    const data = await userService.createUser({ name, password });
+    const data = await userService.createUser({ name, password, email });
     response.status(201).send(data);
   } catch (error) {
     next(error);
@@ -58,7 +58,7 @@ export const update = async (
 ) => {
   // 准备数据
   const { id } = request.user;
-  const userData = _.pick(request.body.update, ['name', 'password']);
+  const userData = _.pick(request.body.update, ['name', 'password', 'email']);
 
   // 更新用户
   try {

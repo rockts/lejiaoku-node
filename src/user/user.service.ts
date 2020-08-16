@@ -23,6 +23,7 @@ export const createUser = async (user: UserModel) => {
  */
 interface GetUserOptions {
   password?: boolean;
+  email?: string;
 }
 
 export const getUser = (condition: string) => {
@@ -35,6 +36,7 @@ export const getUser = (condition: string) => {
       SELECT 
         user.id,
         user.name,
+        user.email,
         IF (
           COUNT(avatar.id), 1, NULL
         ) AS avatar
@@ -64,6 +66,11 @@ export const getUserByName = getUser('user.name');
  * 按用户 ID 获取用户
  */
 export const getUserById = getUser('user.id');
+
+/**
+ * 按用户名获取 email
+ */
+export const getUserByEmail = getUser('user.email');
 
 /**
  * 更新用户
