@@ -46,13 +46,40 @@ export const filter = async (
   next: NextFunction,
 ) => {
   // 解构查询符
-  const { tag, user, action } = request.query;
+  const { tag, user, action, grade, subject, version, category } = request.query;
 
   // 设置默认的过滤
   request.filter = {
     name: 'default',
     sql: 'resources.id IS NOT NULL',
   };
+
+  // 按年级过滤
+  if (grade && !tag && !user && !action && !subject && !version && !category) {
+    request.filter = {
+      name: 'grade',
+      sql: 'grade = ?',
+      param: grade,
+    };
+  }
+
+  // 按学科过滤
+  if (subject && !tag && !user && !action && !grade && !version && !category) {
+    request.filter = {
+      name: 'subject',
+      sql: 'subject = ?',
+      param: subject,
+    };
+  }
+
+  // // 按类型过滤
+  // if (category && !tag && !user && !action && !grade && !version && !subject) {
+  //   request.filter = {
+  //     name: 'categoryName',
+  //     sql: 'category = ?',
+  //     param: category,
+  //   };
+  // }
 
   // 按标签名过滤
   if (tag && !user && !action) {
