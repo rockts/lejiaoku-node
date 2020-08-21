@@ -63,15 +63,6 @@ export const filter = async (
     };
   }
 
-  // 按年级过滤
-  if (grade && !tag && !user && !action && !subject && !version && !category) {
-    request.filter = {
-      name: 'grade',
-      sql: 'grade = ?',
-      param: grade,
-    };
-  }
-
   // 按学科过滤
   if (subject && !tag && !user && !action && !grade && !version && !category) {
     request.filter = {
@@ -80,6 +71,15 @@ export const filter = async (
       param: subject,
     };
   }
+
+  // // 按类型过滤
+  // if (category && !tag && !user && !action && !grade && !version && !subject) {
+  //   request.filter = {
+  //     name: 'categoryName',
+  //     sql: 'category = ?',
+  //     param: category,
+  //   };
+  // }
 
   // 按标签名过滤
   if (tag && !user && !action) {
