@@ -3,7 +3,7 @@ import express from 'express';
 const router = express.Router();
 
 router.get('/', (request, response) => {
-  response.send({ title: '找乐教' });
+  response.send({ title: '乐教库', description: '这是乐教库的 Api.' });
 });
 
 router.post('/echo', (request, response) => {
