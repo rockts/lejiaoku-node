@@ -2,9 +2,9 @@ import { connection } from '../app/database/mysql';
 import { CommentModel } from './comment.model';
 import { sqlFragment } from './comment.provider';
 import {
-  GetResourcesOptionsFilter,
-  GetResourcesOptionsPagination,
-} from '../resources/resources.service';
+  GetPostOptionsFilter,
+  GetPostOptionsPagination,
+} from '../post/post.service';
 
 /**
  * 创建评论
@@ -82,8 +82,8 @@ export const deleteComment = async (commentId: number) => {
  * 获取评论列表
  */
 interface GetCommentsOptions {
-  filter?: GetResourcesOptionsFilter;
-  pagination?: GetResourcesOptionsPagination;
+  filter?: GetPostOptionsFilter;
+  pagination?: GetPostOptionsPagination;
 }
 
 export const getComments = async (options: GetCommentsOptions) => {
@@ -107,13 +107,13 @@ export const getComments = async (options: GetCommentsOptions) => {
       comment.id,
       comment.content,
       ${sqlFragment.user},
-      ${sqlFragment.resources}
+      ${sqlFragment.post}
       ${filter.name == 'userReplied' ? `, ${sqlFragment.repliedComment}` : ''}
       ${filter.name !== 'userReplied' ? `, ${sqlFragment.totalReplies}` : ''}
     FROM
       comment
     ${sqlFragment.leftJoinUser}
-    ${sqlFragment.leftJoinResources}
+    ${sqlFragment.leftJoinPost}
     WHERE
       ${filter.sql}
     GROUP BY
@@ -155,7 +155,7 @@ export const getCommentsTotalCount = async (options: GetCommentsOptions) => {
     FROM
       comment
     ${sqlFragment.leftJoinUser}
-    ${sqlFragment.leftJoinResources}
+    ${sqlFragment.leftJoinPost}
     WHERE
       ${filter.sql}
   `;

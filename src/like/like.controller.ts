@@ -1,26 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import {
-  createUserLikeResources,
-  deleteUserLikeResources,
+  createUserLikePost,
+  deleteUserLikePost,
 } from './like.service';
 
 /**
  * 点赞内容
  */
-export const storeUserLikeResources = async (
+export const storeUserLikePost = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
   // 准备数据
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
   const { id: userId } = request.user;
 
   // 点赞内容
   try {
-    const data = await createUserLikeResources(
+    const data = await createUserLikePost(
       userId,
-      parseInt(resourcesId, 10),
+      parseInt(postId, 10),
     );
 
     // 做出响应
@@ -33,20 +33,20 @@ export const storeUserLikeResources = async (
 /**
  * 取消点赞内容
  */
-export const destroyUserLikeResources = async (
+export const destroyUserLikePost = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
   // 准备数据
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
   const { id: userId } = request.user;
 
   // 取消点赞内容
   try {
-    const data = await deleteUserLikeResources(
+    const data = await deleteUserLikePost(
       userId,
-      parseInt(resourcesId, 10),
+      parseInt(postId, 10),
     );
 
     // 做出响应

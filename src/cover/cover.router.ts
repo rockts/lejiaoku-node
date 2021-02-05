@@ -4,7 +4,7 @@ import { authGuard } from '../auth/auth.middleware';
 import {
   coverInterceptor,
   coverProcessor,
-  deleteResourcesCover,
+  deletePostCover,
 } from './cover.middleware';
 
 const router = express.Router();
@@ -26,7 +26,7 @@ router.post(
 router.delete(
   '/covers/:coverId',
   authGuard,
-  deleteResourcesCover,
+  deletePostCover,
   coverController.destroy,
 );
 

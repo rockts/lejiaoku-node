@@ -11,7 +11,7 @@ export const sqlFragment = {
   `,
   leftJoinUser: `
     LEFT JOIN user
-      ON user.id = resources.userId
+      ON user.id = post.userId
     LEFT JOIN avatar
       ON user.id = avatar.userId
   `,
@@ -21,7 +21,7 @@ export const sqlFragment = {
         category.name
       FROM
         category
-      WHERE category.id = resources.categoryId
+      WHERE category.id = post.categoryId
     ) AS category
   `,
   cover: `
@@ -44,10 +44,10 @@ export const sqlFragment = {
       SELECT *
       FROM 
         cover
-      WHERE cover.resourcesId = resources.id
+      WHERE cover.postId = post.id
       ORDER BY cover.id DESC
       LIMIT 1
-    ) AS cover ON resources.id = cover.resourcesId
+    ) AS cover ON post.id = cover.postId
   `,
   totalComments: `
     (
@@ -56,17 +56,17 @@ export const sqlFragment = {
       FROM
         comment
       WHERE
-        comment.resourcesId = resources.id
+        comment.postId = post.id
     ) AS totalComments
   `,
   leftJoinOneFile: `
     LEFT JOIN LATERAL (
       SELECT *
       FROM file
-      WHERE file.resourcesId = resources.id
+      WHERE file.postId = post.id
       ORDER BY file.id DESC
       LIMIT 1
-    ) AS file ON resources.id = file.resourcesId
+    ) AS file ON post.id = file.postId
   `,
   file: `
     CAST(
@@ -84,9 +84,9 @@ export const sqlFragment = {
   `,
   leftJoinTag: `
     LEFT JOIN
-    resources_tag ON resources_tag.resourcesId = resources.id
+    post_tag ON post_tag.postId = post.id
     LEFT JOIN
-      tag ON resources_tag.tagId = tag.id
+      tag ON post_tag.tagId = tag.id
   `,
   tags: `
     CAST(
@@ -108,13 +108,13 @@ export const sqlFragment = {
   `,
   totalLikes: `
     (
-      SELECT COUNT(user_like_resources.resourcesId)
-      FROM user_like_resources
-      WHERE user_like_resources.resourcesId = resources.id
+      SELECT COUNT(user_like_post.postId)
+      FROM user_like_post
+      WHERE user_like_post.postId = post.id
     ) AS totalLikes
   `,
-  innerJoinUserLikeResources: `
-    INNER JOIN user_like_resources
-      ON user_like_resources.resourcesId = resources.id
+  innerJoinUserLikePost: `
+    INNER JOIN user_like_post
+      ON user_like_post.postId = post.id
   `,
 };

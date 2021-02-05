@@ -8,18 +8,18 @@ const router = express.Router();
  * 点赞内容
  */
 router.post(
-  '/resources/:resourcesId/like',
+  '/post/:postId/like',
   authGuard,
-  likeController.storeUserLikeResources,
+  likeController.storeUserLikePost,
 );
 
 /**
  * 取消点赞内容
  */
 router.delete(
-  '/resources/:resourcesId/like',
+  '/post/:postId/like',
   authGuard,
-  likeController.destroyUserLikeResources,
+  likeController.destroyUserLikePost,
 );
 
 /**

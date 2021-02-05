@@ -3,21 +3,21 @@ import { connection } from '../app/database/mysql';
 /**
  * 保存用户点赞内容
  */
-export const createUserLikeResources = async (
+export const createUserLikePost = async (
   userId: number,
-  resourcesId: number,
+  postId: number,
 ) => {
   // 准备查询
   const statement = `
     INSERT INTO
-      user_like_resources (userId, resourcesId)
+      user_like_post (userId, postId)
     VALUES (?, ?)
   `;
 
   // 执行查询
   const [data] = await connection
     .promise()
-    .query(statement, [userId, resourcesId]);
+    .query(statement, [userId, postId]);
 
   // 提供数据
   return data;
@@ -26,20 +26,20 @@ export const createUserLikeResources = async (
 /**
  * 取消用户点赞内容
  */
-export const deleteUserLikeResources = async (
+export const deleteUserLikePost = async (
   userId: number,
-  resourcesId: number,
+  postId: number,
 ) => {
   // 准备查询
   const statement = `
-    DELETE FROM user_like_resources
-    WHERE userId = ? AND resourcesId = ?
+    DELETE FROM user_like_post
+    WHERE userId = ? AND postId = ?
   `;
 
   // 执行查询
   const [data] = await connection
     .promise()
-    .query(statement, [userId, resourcesId]);
+    .query(statement, [userId, postId]);
 
   // 提供数据
   return data;

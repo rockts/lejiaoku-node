@@ -5,5 +5,5 @@ export class CoverModel {
   filename: string;
   size: number;
   userId: number;
-  resourcesId?: number;
+  postId?: number;
 }

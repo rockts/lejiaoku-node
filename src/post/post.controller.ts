@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import {
-  getResources,
-  createResources,
-  updateResources,
-  deleteResources,
-  createResourcesTag,
-  resourcesHasTag,
-  deleteResourcesTag,
-  getResourcesTotalCount,
-  getResourcesById,
-} from './resources.service';
+  getPost,
+  createPost,
+  updatePost,
+  deletePost,
+  createPostTag,
+  postHasTag,
+  deletePostTag,
+  getPostTotalCount,
+  getPostById,
+} from './post.service';
 import { TagModel } from '../tag/tag.model';
 import { getTagByName, createTag } from '../tag/tag.service';
 /**
@@ -23,7 +23,7 @@ export const index = async (
 ) => {
   try {
     // 统计内容数量
-    const totalCount = await getResourcesTotalCount({
+    const totalCount = await getPostTotalCount({
       filter: request.filter,
     });
 
@@ -34,12 +34,12 @@ export const index = async (
   }
 
   try {
-    const resources = await getResources({
+    const post = await getPost({
       sort: request.sort,
       filter: request.filter,
       pagination: request.pagination,
     });
-    response.send(resources);
+    response.send(post);
   } catch (error) {
     next(error);
   }
@@ -59,7 +59,7 @@ export const store = async (
 
   // 创建内容
   try {
-    const data = await createResources({ title, description, userId, categoryId, grade, subject, version });
+    const data = await createPost({ title, description, userId, categoryId, grade, subject, version });
     response.status(201).send(data);
   } catch (error) {
     next(error);
@@ -75,14 +75,14 @@ export const update = async (
   next: NextFunction,
 ) => {
   // 获取内容 ID
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
 
   // 准备数据
-  const resources = _.pick(request.body, ['title', 'description', 'categoryId', 'grade', 'subject', 'version']);
+  const post = _.pick(request.body, ['title', 'description', 'categoryId', 'grade', 'subject', 'version']);
 
   // 更新
   try {
-    const data = await updateResources(parseInt(resourcesId, 10), resources);
+    const data = await updatePost(parseInt(postId, 10), post);
     response.send(data);
   } catch (error) {
     next(error);
@@ -98,11 +98,11 @@ export const destroy = async (
   next: NextFunction,
 ) => {
   // 获取资源 ID
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
 
   // 删除资源
   try {
-    const data = await deleteResources(parseInt(resourcesId, 10));
+    const data = await deletePost(parseInt(postId, 10));
     response.send(data);
   } catch (error) {
     next(error);
@@ -112,13 +112,13 @@ export const destroy = async (
 /**
  * 添加内容标签
  */
-export const storeResourcesTag = async (
+export const storePostTag = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
   // 准备数据
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
   const { name } = request.body;
 
   let tag: TagModel;
@@ -133,11 +133,11 @@ export const storeResourcesTag = async (
   // 找到标签，验证内容标签
   if (tag) {
     try {
-      const resourcesTag = await resourcesHasTag(
-        parseInt(resourcesId, 10),
+      const postTag = await postHasTag(
+        parseInt(postId, 10),
         tag.id,
       );
-      if (resourcesTag) return next(new Error('POST_ALREADY_HAS_THIS_TAG'));
+      if (postTag) return next(new Error('POST_ALREADY_HAS_THIS_TAG'));
     } catch (error) {
       return next(error);
     }
@@ -155,7 +155,7 @@ export const storeResourcesTag = async (
 
   // 给内容打上标签
   try {
-    await createResourcesTag(parseInt(resourcesId, 10), tag.id);
+    await createPostTag(parseInt(postId, 10), tag.id);
     response.sendStatus(201);
   } catch (error) {
     return next(error);
@@ -165,18 +165,18 @@ export const storeResourcesTag = async (
 /**
  * 移除内容标签
  */
-export const destroyResourcesTag = async (
+export const destroyPostTag = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
   // 准备数据
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
   const { tagId } = request.body;
 
   // 移除内容标签
   try {
-    await deleteResourcesTag(parseInt(resourcesId, 10), tagId);
+    await deletePostTag(parseInt(postId, 10), tagId);
     response.sendStatus(200);
   } catch (error) {
     next(error);
@@ -192,14 +192,14 @@ export const show = async (
   next: NextFunction,
 ) => {
   // 准备数据
-  const { resourcesId } = request.params;
+  const { postId } = request.params;
 
   // 调取内容
   try {
-    const resources = await getResourcesById(parseInt(resourcesId, 10));
+    const post = await getPostById(parseInt(postId, 10));
 
     // 做出响应
-    response.send(resources);
+    response.send(post);
   } catch (error) {
     next(error);
   }

@@ -5,7 +5,7 @@ import { connection } from '../app/database/mysql';
 import { signToken } from '../auth/auth.service';
 import { deleteUser, getUserById } from './user.service';
 import { UserModel } from './user.model';
-import { createUserLikeResources } from '../like/like.service';
+import { createUserLikePost } from '../like/like.service';
 
 /**
  * 准备测试

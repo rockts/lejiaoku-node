@@ -16,7 +16,7 @@ export const store = async (
   const { id: userId } = request.user;
 
   // 所属内容
-  const { resources: resourcesId } = request.query;
+  const { post: postId } = request.query;
 
   // 文件信息
   const coverInfo = _.pick(request.file, [
@@ -31,7 +31,7 @@ export const store = async (
     const data = await createCover({
       ...coverInfo,
       userId,
-      resourcesId,
+      postId,
       ...request.fileMetaData,
     });
     // 做出响应

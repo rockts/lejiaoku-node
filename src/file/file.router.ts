@@ -1,7 +1,7 @@
 import express from 'express';
 import * as fileController from './file.controller';
 import { authGuard } from '../auth/auth.middleware';
-import { fileInterceptor, fileProcessor, deleteResourcesFile } from './file.middleware';
+import { fileInterceptor, fileProcessor, deletePostFile } from './file.middleware';
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.post(
 router.delete(
   '/files/:fileId',
   authGuard,
-  deleteResourcesFile,
+  deletePostFile,
   fileController.destroy,
 );
 

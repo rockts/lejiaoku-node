@@ -28,13 +28,19 @@ export const fileFilter = (fileTypes: Array<string>) => {
 
 const fileUploadFilter = fileFilter([
   'image/png',
-  'image/jpg',
   'image/jpeg',
+  'image/jpg',
+  'image/gif',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/pdf',
-  'application/msword'
+  'application/msword',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.ms-excel',
+  'application/vnd.apple.page',
+  'application/vnd.apple.numbers',
+  'application/vnd.apple.page'
 ]);
 
 /**
@@ -70,7 +76,7 @@ export const fileProcessor = async (
 /**
  * 删除资源文件
  */
-export const deleteResourcesFile = async (
+export const deletePostFile = async (
   request: Request,
   response: Response,
   next: NextFunction,

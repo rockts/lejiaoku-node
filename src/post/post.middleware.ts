@@ -17,16 +17,16 @@ export const sort = async (
   // 设置排序用的 SQL
   switch (sort) {
     case 'earliest':
-      sqlSort = 'resources.id ASC';
+      sqlSort = 'post.id ASC';
       break;
     case 'latest':
-      sqlSort = 'resources.id DESC';
+      sqlSort = 'post.id DESC';
       break;
     case 'most_comments':
-      sqlSort = 'totalComments DESC ,resources.id DESC';
+      sqlSort = 'totalComments DESC ,post.id DESC';
       break;
     default:
-      sqlSort = 'resources.id DESC';
+      sqlSort = 'post.id DESC';
       break;
   }
 
@@ -51,7 +51,7 @@ export const filter = async (
   // 设置默认的过滤
   request.filter = {
     name: 'default',
-    sql: 'resources.id IS NOT NULL',
+    sql: 'post.id IS NOT NULL',
   };
 
   // 按年级过滤
@@ -103,7 +103,7 @@ export const filter = async (
   if (user && action == 'liked' && !tag) {
     request.filter = {
       name: 'userLiked',
-      sql: 'user_like_resources.userId = ?',
+      sql: 'user_like_post.userId = ?',
       param: user,
     };
   }
