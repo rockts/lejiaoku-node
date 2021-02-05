@@ -10,7 +10,7 @@ const router = express.Router();
  * 内容列表
  */
 router.get(
-  '/post',
+  '/posts',
   sort,
   filter,
   paginate(POSTS_PER_PAGE),
@@ -20,13 +20,13 @@ router.get(
 /**
  * 创建内容
  */
-router.post('/post', authGuard, postController.store);
+router.post('/posts', authGuard, postController.store);
 
 /**
  * 更新内容
  */
 router.patch(
-  '/post/:postId',
+  '/posts/:postId',
   authGuard,
   accessControl({ possession: true }),
   postController.update,
@@ -36,7 +36,7 @@ router.patch(
  * 删除内容
  */
 router.delete(
-  '/post/:postId',
+  '/posts/:postId',
   authGuard,
   accessControl({ possession: true }),
   postController.destroy,
@@ -46,7 +46,7 @@ router.delete(
  * 添加内容标签
  */
 router.post(
-  '/post/:postId/tag',
+  '/posts/:postId/tag',
   authGuard,
   accessControl({ possession: true }),
   postController.storePostTag,
@@ -56,7 +56,7 @@ router.post(
  * 移除内容标签
  */
 router.delete(
-  '/post/:postId/tag',
+  '/posts/:postId/tag',
   authGuard,
   accessControl({ possession: true }),
   postController.destroyPostTag,
@@ -65,7 +65,7 @@ router.delete(
 /**
  * 单个内容
  */
-router.get('/post/:postId', postController.show);
+router.get('/posts/:postId', postController.show);
 
 /**
  * 导出路由
