@@ -14,7 +14,7 @@ export const store = async (
   const { id: userId } = request.user;
 
   // 所属内容
-  const { resources: resourcesId } = request.query;
+  const { post: postId } = request.query;
 
   // 文件信息
   const fileInfo = _.pick(request.file, [
@@ -30,7 +30,7 @@ export const store = async (
     const data = await createFile({
       ...fileInfo,
       userId,
-      resourcesId
+      postId
     });
 
     // 做出响应
@@ -109,7 +109,7 @@ export const metadata = async (
     const file = await findFileById(parseInt(fileId, 10));
 
     // 准备响应数据
-    const data = _.pick(file, ['id', 'filename', 'size', 'mimetype', 'resourcesId', 'userId']);
+    const data = _.pick(file, ['id', 'filename', 'size', 'mimetype', 'postId', 'userId']);
 
     // 做出响应
     response.send(data);

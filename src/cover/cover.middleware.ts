@@ -26,7 +26,7 @@ export const coverFilter = (coverTypes: Array<string>) => {
   };
 };
 
-const coverUploadFilter = coverFilter(['image/png', 'image/jpg', 'image/jpeg']);
+const coverUploadFilter = coverFilter(['image/png', 'image/jpg', 'image/jpeg', 'image/gif']);
 
 /**
  * 创建一个 Multer
@@ -81,7 +81,7 @@ export const coverProcessor = async (
 /**
  * 删除资源封面
  */
-export const deleteResourcesCover = async (
+export const deletePostCover = async (
   request: Request,
   response: Response,
   next: NextFunction,

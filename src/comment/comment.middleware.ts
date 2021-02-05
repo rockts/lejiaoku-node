@@ -9,7 +9,7 @@ export const filter = async (
   next: NextFunction,
 ) => {
   // 解构查询符
-  const { resources, user, action } = request.query;
+  const { post, user, action } = request.query;
 
   // 默认的过滤
   request.filter = {
@@ -18,16 +18,16 @@ export const filter = async (
   };
 
   // 内容的评论
-  if (resources && !user && !action) {
+  if (post && !user && !action) {
     request.filter = {
-      name: 'resourcesComments',
-      sql: 'comment.parentId IS NULL AND comment.resourcesId = ?',
-      param: resources,
+      name: 'postComments',
+      sql: 'comment.parentId IS NULL AND comment.postId = ?',
+      param: post,
     };
   }
 
   // 用户的评论
-  if (user && action == 'published' && !resources) {
+  if (user && action == 'published' && !post) {
     request.filter = {
       name: 'userPublished',
       sql: 'comment.parentId IS NULL AND comment.userId = ?',
@@ -36,7 +36,7 @@ export const filter = async (
   }
 
   // 用户的回复
-  if (user && action == 'replied' && !resources) {
+  if (user && action == 'replied' && !post) {
     request.filter = {
       name: 'userReplied',
       sql: 'comment.parentId IS NOT NULL AND comment.userId = ?',

@@ -1,28 +1,28 @@
 import { connection } from '../app/database/mysql';
-import { ResourcesModel } from './resources.model';
-import { sqlFragment } from './resources.provider';
+import { PostModel } from './post.model';
+import { sqlFragment } from './post.provider';
 
 /**
  * 获取内容列表
  */
-export interface GetResourcesOptionsFilter {
+export interface GetPostOptionsFilter {
   name: string;
   sql?: string;
   param?: string;
 }
 
-export interface GetResourcesOptionsPagination {
+export interface GetPostOptionsPagination {
   limit: number;
   offset: number;
 }
 
-interface GetResourcesOptions {
+interface GetPostOptions {
   sort?: string;
-  filter?: GetResourcesOptionsFilter;
-  pagination?: GetResourcesOptionsPagination;
+  filter?: GetPostOptionsFilter;
+  pagination?: GetPostOptionsPagination;
 }
 
-export const getResources = async (options: GetResourcesOptions) => {
+export const getPost = async (options: GetPostOptions) => {
   const {
     sort,
     filter,
@@ -39,12 +39,12 @@ export const getResources = async (options: GetResourcesOptions) => {
 
   const statement = `
     SELECT
-      resources.id,
-      resources.title,
-      resources.description,
-      resources.grade,
-      resources.subject,
-      resources.version,
+      post.id,
+      post.title,
+      post.description,
+      post.grade,
+      post.subject,
+      post.version,
       ${sqlFragment.category},
       ${sqlFragment.cover},
       ${sqlFragment.user},
@@ -52,14 +52,14 @@ export const getResources = async (options: GetResourcesOptions) => {
       ${sqlFragment.file},
       ${sqlFragment.tags},
       ${sqlFragment.totalLikes}
-    FROM resources
+    FROM post
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneCover}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
-    ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikeResources : ''}
+    ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikePost : ''}
     WHERE ${filter.sql}
-    GROUP BY resources.id
+    GROUP BY post.id
     ORDER BY ${sort}
     LIMIT ?
     OFFSET ?
@@ -73,15 +73,15 @@ export const getResources = async (options: GetResourcesOptions) => {
 /**
  * 创建内容
  */
-export const createResources = async (resources: ResourcesModel) => {
+export const createPost = async (post: PostModel) => {
   // 准备查询
   const statement = `
-    INSERT INTO resources
+    INSERT INTO post
     SET ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, resources);
+  const [data] = await connection.promise().query(statement, post);
 
   // 提供数据
   return data;
@@ -90,13 +90,13 @@ export const createResources = async (resources: ResourcesModel) => {
 /**
  * 更新资源
  */
-export const updateResources = async (
-  resourcesId: number,
-  resources: ResourcesModel,
+export const updatePost = async (
+  postId: number,
+  post: PostModel,
 ) => {
   // 准备查询
   const statement = `
-    UPDATE resources
+    UPDATE post
     SET ?
     WHERE id = ?
   `;
@@ -104,7 +104,7 @@ export const updateResources = async (
   // 执行查询
   const [data] = await connection
     .promise()
-    .query(statement, [resources, resourcesId]);
+    .query(statement, [post, postId]);
 
   // 提供数据
   return data;
@@ -113,15 +113,15 @@ export const updateResources = async (
 /**
  * 删除资源
  */
-export const deleteResources = async (resourcesId: number) => {
+export const deletePost = async (postId: number) => {
   // 准备查询
   const statement = `
-    DELETE FROM resources
+    DELETE FROM post
     WHERE id = ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, resourcesId);
+  const [data] = await connection.promise().query(statement, postId);
 
   // 提供数据
   return data;
@@ -130,20 +130,20 @@ export const deleteResources = async (resourcesId: number) => {
 /**
  * 保存内容标签
  */
-export const createResourcesTag = async (
-  resourcesId: number,
+export const createPostTag = async (
+  postId: number,
   tagId: number,
 ) => {
   // 准备查询
   const statement = `
-    INSERT INTO resources_tag (resourcesId, tagId)
+    INSERT INTO post_tag (postId, tagId)
     VALUES(?, ?)
   `;
 
   // 执行查询
   const [data] = await connection
     .promise()
-    .query(statement, [resourcesId, tagId]);
+    .query(statement, [postId, tagId]);
 
   // 提供数据
   return data;
@@ -152,17 +152,17 @@ export const createResourcesTag = async (
 /**
  * 检查内容标签
  */
-export const resourcesHasTag = async (resourcesId: number, tagId: number) => {
+export const postHasTag = async (postId: number, tagId: number) => {
   // 准备查询
   const statement = `
-    SELECT * FROM resources_tag
-    WHERE resourcesId=? AND tagId=?
+    SELECT * FROM post_tag
+    WHERE postId=? AND tagId=?
   `;
 
   // 执行查询
   const [data] = await connection
     .promise()
-    .query(statement, [resourcesId, tagId]);
+    .query(statement, [postId, tagId]);
 
   // 提供数据
   return data[0] ? true : false;
@@ -171,20 +171,20 @@ export const resourcesHasTag = async (resourcesId: number, tagId: number) => {
 /**
  * 移除内容标签
  */
-export const deleteResourcesTag = async (
-  resourcesId: number,
+export const deletePostTag = async (
+  postId: number,
   tagId: number,
 ) => {
   // 准备查询
   const statement = `
-    DELETE FROM resources_tag
-    WHERE resourcesId = ? AND tagId = ?
+    DELETE FROM post_tag
+    WHERE postId = ? AND tagId = ?
   `;
 
   // 执行查询
   const [data] = await connection
     .promise()
-    .query(statement, [resourcesId, tagId]);
+    .query(statement, [postId, tagId]);
 
   // 提供数据
   return data;
@@ -193,7 +193,7 @@ export const deleteResourcesTag = async (
 /**
  * 统计资源数量
  */
-export const getResourcesTotalCount = async (options: GetResourcesOptions) => {
+export const getPostTotalCount = async (options: GetPostOptions) => {
   const { filter } = options;
 
   // SQL 参数
@@ -202,13 +202,13 @@ export const getResourcesTotalCount = async (options: GetResourcesOptions) => {
   // 准备查询
   const statement = `
     SELECT
-      COUNT(DISTINCT resources.id) AS total
-    FROM resources
+      COUNT(DISTINCT post.id) AS total
+    FROM post
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneCover}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
-    ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikeResources : ''}
+    ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikePost : ''}
     WHERE ${filter.sql}
   `;
 
@@ -222,16 +222,16 @@ export const getResourcesTotalCount = async (options: GetResourcesOptions) => {
 /**
  * 按 ID 调取内容
  */
-export const getResourcesById = async (resourcesId: number) => {
+export const getPostById = async (postId: number) => {
   // 准备查询
   const statement = `
     SELECT
-      resources.id,
-      resources.title,
-      resources.description,
-      resources.grade,
-      resources.subject,
-      resources.version,
+      post.id,
+      post.title,
+      post.description,
+      post.grade,
+      post.subject,
+      post.version,
       ${sqlFragment.category},
       ${sqlFragment.cover},
       ${sqlFragment.user},
@@ -239,16 +239,16 @@ export const getResourcesById = async (resourcesId: number) => {
       ${sqlFragment.file},
       ${sqlFragment.tags},
       ${sqlFragment.totalLikes}
-    FROM resources
+    FROM post
     ${sqlFragment.leftJoinOneCover}
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
-    WHERE resources.id = ?
+    WHERE post.id = ?
   `;
 
   // 执行查询
-  const [data] = await connection.promise().query(statement, resourcesId);
+  const [data] = await connection.promise().query(statement, postId);
 
   // 没找到内容
   if (!data[0].id) {

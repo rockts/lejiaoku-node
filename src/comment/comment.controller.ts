@@ -19,11 +19,11 @@ export const store = async (
 ) => {
   // 准备数据
   const { id: userId } = request.user;
-  const { content, resourcesId } = request.body;
+  const { content, postId } = request.body;
 
   const comment = {
     content,
-    resourcesId,
+    postId,
     userId,
   };
 
@@ -50,11 +50,11 @@ export const reply = async (
   const { commentId } = request.params;
   const parentId = parseInt(commentId, 10);
   const { id: userId } = request.user;
-  const { content, resourcesId } = request.body;
+  const { content, postId } = request.body;
 
   const comment = {
     content,
-    resourcesId,
+    postId,
     userId,
     parentId,
   };

@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import resourcesRouter from '../resources/resources.router';
+import postRouter from '../post/post.router';
 import userRouter from '../user/user.router';
 import authRouter from '../auth/auth.router';
 import coverRouter from '../cover/cover.router';
@@ -37,7 +37,7 @@ app.use(express.json());
  * 路由
  */
 app.use(
-  resourcesRouter,
+  postRouter,
   userRouter,
   authRouter,
   coverRouter,
