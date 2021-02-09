@@ -2,29 +2,29 @@
  * 查询片断
  */
 export const sqlFragment = {
-  user: `
+    user: `
     JSON_OBJECT (
       "id", user.id,
       "name", user.name,
       "avatar", IF(COUNT(avatar.id), 1, null)
     ) AS user
   `,
-  leftJoinUser: `
+    leftJoinUser: `
     LEFT JOIN user
       ON user.id = post.userId
     LEFT JOIN avatar
       ON user.id = avatar.userId
   `,
-  category: `
-    (
-      SELECT
-        category.name
-      FROM
-        category
-      WHERE category.id = post.categoryId
-    ) AS category
-  `,
-  cover: `
+    //     category: `
+    //     (
+    //       SELECT
+    //         category.name
+    //       FROM
+    //         category
+    //       WHERE category.id = post.categoryId
+    //     ) AS category
+    //   `,
+    cover: `
     CAST(
       IF(
         COUNT(cover.id),
@@ -39,7 +39,7 @@ export const sqlFragment = {
       ) AS JSON
     ) AS cover
   `,
-  leftJoinOneCover: `
+    leftJoinOneCover: `
     LEFT JOIN LATERAL (
       SELECT *
       FROM 
@@ -49,7 +49,7 @@ export const sqlFragment = {
       LIMIT 1
     ) AS cover ON post.id = cover.postId
   `,
-  totalComments: `
+    totalComments: `
     (
       SELECT
         COUNT(comment.id)
@@ -59,7 +59,7 @@ export const sqlFragment = {
         comment.postId = post.id
     ) AS totalComments
   `,
-  leftJoinOneFile: `
+    leftJoinOneFile: `
     LEFT JOIN LATERAL (
       SELECT *
       FROM file
@@ -68,27 +68,28 @@ export const sqlFragment = {
       LIMIT 1
     ) AS file ON post.id = file.postId
   `,
-  file: `
+    file: `
     CAST(
       IF(
         COUNT(file.id),
         GROUP_CONCAT(
           DISTINCT JSON_OBJECT(
             "id", file.id,
-            "mimetype", file.mimetype
+            "mimetype", file.mimetype,
+            "size", file.size
           )
         ),
         NULL
       ) AS JSON
     ) AS file
   `,
-  leftJoinTag: `
+    leftJoinTag: `
     LEFT JOIN
     post_tag ON post_tag.postId = post.id
     LEFT JOIN
       tag ON post_tag.tagId = tag.id
   `,
-  tags: `
+    tags: `
     CAST(
       IF(
         COUNT(tag.id),
@@ -106,14 +107,14 @@ export const sqlFragment = {
       ) AS JSON
     ) AS tags
   `,
-  totalLikes: `
+    totalLikes: `
     (
       SELECT COUNT(user_like_post.postId)
       FROM user_like_post
       WHERE user_like_post.postId = post.id
     ) AS totalLikes
   `,
-  innerJoinUserLikePost: `
+    innerJoinUserLikePost: `
     INNER JOIN user_like_post
       ON user_like_post.postId = post.id
   `,
