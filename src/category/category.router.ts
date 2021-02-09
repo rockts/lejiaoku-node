@@ -10,29 +10,34 @@ const router = express.Router();
 router.get('/categorys', categoryController.index);
 
 /**
+ * 获取单个类型
+ */
+router.get('/categorys/:categoryId', categoryController.show);
+
+/**
  * 创建资源类别
  */
 router.post(
-  '/categorys', authGuard, accessControl({ possession: true }), categoryController.store);
+    '/categorys', authGuard, accessControl({ possession: true }), categoryController.store);
 
 /**
  * 更新资源类别
  */
 router.patch(
-  '/categorys/:categoryId',
-  authGuard,
-  accessControl({ possession: true }),
-  categoryController.update,
+    '/categorys/:categoryId',
+    authGuard,
+    accessControl({ possession: true }),
+    categoryController.update,
 );
 
 /**
  *  删除分类
  */
 router.delete(
-  '/categorys/:categoryId',
-  authGuard,
-  accessControl({ possession: true }),
-  categoryController.destroy,
+    '/categorys/:categoryId',
+    authGuard,
+    accessControl({ possession: true }),
+    categoryController.destroy,
 );
 
 /**

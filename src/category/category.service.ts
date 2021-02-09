@@ -5,101 +5,127 @@ import { CategoryModel } from './category.model';
  * 获取分类列表
  */
 export const getCategory = async () => {
-  const statement = `
+    const statement = `
     SELECT
       id, name, alias
     FROM category
   `;
 
-  const [data] = await connection.promise().query(statement);
+    const [data] = await connection.promise().query(statement);
 
-  return data;
+    return data;
 };
 
 /**
  * 创建分类
  */
 export const createCategory = async (category: CategoryModel) => {
-  // 准备查询
-  const statement = `
+    // 准备查询
+    const statement = `
     INSERT INTO category
     SET ?
   `;
 
-  // 执行查询
-  const [data] = await connection.promise().query(statement, category);
+    // 执行查询
+    const [data] = await connection.promise().query(statement, category);
 
-  // 提供数据
-  return data as any;
+    // 提供数据
+    return data as any;
 };
 
 /**
  * 按名字查找类别
  */
 export const getCategoryByName = async (categoryName: string) => {
-  // 准备查询
-  const statement = `
+    // 准备查询
+    const statement = `
     SELECT id, name, alias
     FROM category
     WHERE name = ?
   `;
 
-  // 执行查询
-  const [data] = await connection.promise().query(statement, categoryName);
+    // 执行查询
+    const [data] = await connection.promise().query(statement, categoryName);
 
-  // 提供数据
-  return data[0];
+    // 提供数据
+    return data[0];
 };
 
 /**
  * 更新资源类别
  */
 export const updateCategory = async (categoryId: number, category: CategoryModel) => {
-  // 准备数据
-  const statement = `
+    // 准备数据
+    const statement = `
     UPDATE category
     SET ?
     WHERE id = ?
   `;
 
-  // 执行
-  const [data] = await connection.promise().query(statement, [category, categoryId]);
+    // 执行
+    const [data] = await connection.promise().query(statement, [category, categoryId]);
 
-  // 提供数据
-  return data;
+    // 提供数据
+    return data;
 };
 
 /**
  * 删除分类
  */
 export const deleteCategory = async (typeId: number) => {
-  // 准备数据
-  const statement = `
+    // 准备数据
+    const statement = `
     DELETE FROM category
     WHERE id = ?
   `;
 
-  // 执行
-  const [data] = await connection.promise().query(statement, typeId);
+    // 执行
+    const [data] = await connection.promise().query(statement, typeId);
 
-  // 提供数据
-  return data;
+    // 提供数据
+    return data;
 };
 
 /**
  * 统计资源类别数量
  */
 export const getCategoryTotalCount = async () => {
-  // 准备查询
-  const statement = `
+    // 准备查询
+    const statement = `
     SELECT
       COUNT(DISTINCT category.id) AS total
     FROM category
   `;
 
-  // 执行查询
-  const [data] = await connection.promise().query(statement);
+    // 执行查询
+    const [data] = await connection.promise().query(statement);
 
-  // 提供结果
-  return data[0].total;
+    // 提供结果
+    return data[0].total;
+};
+
+/**
+ * 按 ID 调取类型
+ */
+export const getCategoryById = async (categoryId: number) => {
+    // 准备数据
+    const statement = `
+    SELECT
+        category.id,
+        category.name,
+        category.alias
+    FROM category
+    WHERE category.id = ?
+    `;
+
+    // 执行查询
+    const [data] = await connection.promise().query(statement, categoryId);
+
+    // 没找到类型
+    if (!data[0].id) {
+        throw new Error('NOT_FOUND');
+    }
+
+    // 提供数据
+    return data[0];
 };
