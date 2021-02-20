@@ -7,4 +7,6 @@ export class PostModel {
     subject?: string;
     version?: string;
     categoryId?: number;
+    created_at?: Date;
+    updated_at?: Date;
 }

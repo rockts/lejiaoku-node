@@ -85,7 +85,7 @@ export const filter = async (
     if (category && !tag && !user && !action && !grade && !version && !subject) {
         request.filter = {
             name: 'categoryName',
-            sql: 'category = ?',
+            sql: 'category.name = ?',
             param: category,
         };
     }
