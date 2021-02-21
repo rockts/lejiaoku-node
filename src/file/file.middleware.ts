@@ -31,6 +31,7 @@ const fileUploadFilter = fileFilter([
   'image/jpeg',
   'image/jpg',
   'image/gif',
+  'image/bmp',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
