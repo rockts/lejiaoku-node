@@ -38,10 +38,7 @@ const fileUploadFilter = fileFilter([
   'application/msword',
   'application/vnd.ms-powerpoint',
   'application/vnd.ms-excel',
-  'application/vnd.apple.page',
-  'application/vnd.apple.numbers',
-  'application/vnd.apple.page',
-  'application/octet-stream'
+
 ]);
 
 /**
