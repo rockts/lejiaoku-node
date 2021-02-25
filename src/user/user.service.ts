@@ -51,12 +51,13 @@ export const getUserList = async () => {
 interface GetUserOptions {
   password?: boolean;
   email?: string;
+  name?: string;
 }
 
 export const getUser = (condition: string) => {
   return async (param: string | number, options: GetUserOptions = {}) => {
     // 准备选项
-    const { password, email } = options;
+    const { password, name, email } = options;
 
     // 准备查询
     const statement = `
@@ -64,11 +65,14 @@ export const getUser = (condition: string) => {
         user.id,
         user.name,
         user.email,
+        user.created_at,
+        user.updated_at,
         IF (
           COUNT(avatar.id), 1, NULL
         ) AS avatar
         ${password ? ', password' : ''}
         ${email ? ', email' : ''}
+        ${name ? ', nama' : ''}
       FROM
         user
       LEFT JOIN avatar
@@ -96,7 +100,7 @@ export const getUserByName = getUser('user.name');
 export const getUserById = getUser('user.id');
 
 /**
- * 按用户名获取 email
+ * 按 email 获取用户
  */
 export const getUserByEmail = getUser('user.email');
 
