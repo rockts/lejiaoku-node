@@ -49,6 +49,8 @@ export const authGuard = (
   console.log('👮🏼‍♀️ 验证用户身份');
 
   return request.user.id ? next() : next(new Error('UNAUTHORIZED'));
+  console.log(request.user.id);
+
 };
 
 /**
