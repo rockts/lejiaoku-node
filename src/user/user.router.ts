@@ -17,7 +17,7 @@ router.get('/users/', userController.index);
 /**
  * 创建用户
  */
-router.post('/users', validateUserData, hashPassword, userController.store);
+router.post('/register', validateUserData, hashPassword, userController.store);
 
 /**
  * 用户帐户
