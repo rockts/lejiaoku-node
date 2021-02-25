@@ -27,6 +27,8 @@ export const getUserList = async () => {
       user.id, 
       user.name,
       user.email,
+      user.created_at,
+      user.updated_at,
       IF (
         COUNT(avatar.id), 1, NULL
       ) AS avatar
