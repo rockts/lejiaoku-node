@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as userService from '../user/user.service';
 import { PUBLIC_KEY } from '../app/app.config';
-import { TokenPayload } from './auth.interface';
 import { possess } from './auth.service';
 
 /**
