@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
+import { UserModel } from './user.model';
 import { deleteUser, createUser, updateUser, getUserList, getUserById, getUserTotalCount } from './user.service';
 
 /**
@@ -42,7 +43,8 @@ export const store = async (
   // 创建用户
   try {
     const data = await createUser({ name, password, email });
-    response.status(201).send(data);
+
+    response.status(201).send({ message: '注册成功', data });
   } catch (error) {
     next(error);
   }
