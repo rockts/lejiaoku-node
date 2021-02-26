@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { signToken } from './auth.service';
 
+
 /**
  * 用户登录
  */
@@ -14,16 +15,42 @@ export const login = async (
     user: { id, name, email, created_at, updated_at },
   } = request.body;
 
-  const payload = { id, name, email };
+  const payload = { id, name, email, created_at, updated_at };
 
   try {
     // 签发令牌
     const token = signToken({ payload });
 
+    const user = { id, name, email, created_at, updated_at }
+
     // 做出响应
-    response.send({ id, name, email, token, created_at, updated_at });
+    response.send({
+      message: 'success',
+      token,
+      user
+    });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * 当前用户
+ */
+export const user = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  const Authorization = request.user;
+  const user = Authorization
+
+
+  try {
+    response.send(user)
+
+  } catch (error) {
+    next(error)
   }
 };
 
