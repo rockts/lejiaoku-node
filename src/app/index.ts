@@ -5,6 +5,7 @@ import userRouter from '../user/user.router';
 import authRouter from '../auth/auth.router';
 import coverRouter from '../cover/cover.router';
 import fileRouter from '../file/file.router';
+import { currentUser } from '../auth/auth.middleware';
 import tagRouter from '../tag/tag.router';
 import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
@@ -32,6 +33,11 @@ app.use(
  * 处理 JSON
  */
 app.use(express.json());
+
+/**
+ * 验证当前用户
+ */
+app.use(currentUser);
 
 /**
  * 路由
