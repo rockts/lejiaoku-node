@@ -122,3 +122,14 @@ export const destroy = async (
     next(error);
   }
 };
+
+/**
+ * 忘记密码
+ */
+export const forgot = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+
+}

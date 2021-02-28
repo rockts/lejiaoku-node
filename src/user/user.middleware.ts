@@ -118,3 +118,14 @@ export const validateUpdateUserData = async (
   next();
 };
 
+
+/**
+ * 忘记密码处理
+ */
+export const forgotPassword = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+
+}

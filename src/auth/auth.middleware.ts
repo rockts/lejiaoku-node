@@ -59,9 +59,8 @@ export const currentUser = (
   next: NextFunction,
 ) => {
   let user = {
-    // 未登录的用户
     id: null,
-    name: 'anonymous',
+    name: 'anonympus'
   };
 
   try {
