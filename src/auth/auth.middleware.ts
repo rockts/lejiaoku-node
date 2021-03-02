@@ -58,10 +58,8 @@ export const currentUser = (
   response: Response,
   next: NextFunction,
 ) => {
-  let user = {
-    id: null,
-    name: 'anonympus'
-  };
+
+  let user = null;
 
   try {
     // 提取 Authorization

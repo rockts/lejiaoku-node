@@ -15,7 +15,7 @@ export const login = async (
     user: { id, name, email, created_at, updated_at },
   } = request.body;
 
-  const payload = { id, name, email, created_at, updated_at };
+  const payload = { id, name, email };
 
   try {
     // 签发令牌
