@@ -58,7 +58,6 @@ export const currentUser = (
   response: Response,
   next: NextFunction,
 ) => {
-
   let user = null;
 
   try {
