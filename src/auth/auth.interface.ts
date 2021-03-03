@@ -3,4 +3,5 @@ export interface TokenPayload {
   name?: string;
   email?: string;
   iat?: number;
+  avatar?: number;
 }
