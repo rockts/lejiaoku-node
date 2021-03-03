@@ -12,7 +12,7 @@ export const login = async (
 ) => {
   // 准备数据
   const {
-    user: { id, name, email, created_at, updated_at },
+    user: { id, name, email, created_at, updated_at, avatar },
   } = request.body;
 
   const payload = { id, name, email };
@@ -21,7 +21,7 @@ export const login = async (
     // 签发令牌
     const token = signToken({ payload });
 
-    const user = { id, name, email, created_at, updated_at }
+    const user = { id, name, email, created_at, updated_at, avatar }
 
     // 做出响应
     response.send({
@@ -43,11 +43,15 @@ export const user = async (
   next: NextFunction,
 ) => {
   const Authorization = request.user;
-  const user = Authorization
+  const user = Authorization;
+
+
 
 
   try {
     response.send(user)
+    console.log(user);
+
 
   } catch (error) {
     next(error)
