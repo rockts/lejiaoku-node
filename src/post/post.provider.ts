@@ -15,19 +15,6 @@ export const sqlFragment = {
     LEFT JOIN avatar
       ON user.id = avatar.userId
   `,
-    category: `
-    (
-        SELECT
-          category.name
-        FROM
-          category
-        WHERE category.id = post.categoryId
-      ) AS category
-    `,
-    // leftJoinCategory: `
-    //  LEFT JOIN category
-    //    ON category.id = post.categoryId
-    // `,
     cover: `
     CAST(
     IF(
@@ -42,7 +29,7 @@ export const sqlFragment = {
         NULL
     ) AS JSON
     ) AS cover
-        `,
+    `,
     leftJoinOneCover: `
     LEFT JOIN LATERAL(
         SELECT *
