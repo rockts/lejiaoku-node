@@ -11,7 +11,7 @@ import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
 import appRouter from './app.router';
-import categoryRouter from "../category/category.router";
+import classificationRouter from "../classification/classification.router";
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -53,7 +53,7 @@ app.use(
   commentRouter,
   likeRouter,
   appRouter,
-  categoryRouter
+  classificationRouter
 );
 
 /**
