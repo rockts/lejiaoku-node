@@ -84,9 +84,18 @@ export const filter = async (
     // 按类型过滤
     if (category && !tag && !user && !action && !grade && !version && !subject) {
         request.filter = {
-            name: 'categoryName',
-            sql: 'category.name = ?',
+            name: 'category',
+            sql: 'category = ?',
             param: category,
+        };
+    }
+
+    // 多种过滤
+    if (category && grade && version && subject) {
+        request.filter = {
+            name: 'post',
+            sql: 'category = ? and grade = ? and version = ? and subject = ?  ',
+
         };
     }
 
