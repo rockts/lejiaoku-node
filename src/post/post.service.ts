@@ -53,13 +53,15 @@ export const getPost = async (options: GetPostOptions) => {
       ${sqlFragment.totalComments},
       ${sqlFragment.file},
       ${sqlFragment.tags},
-      ${sqlFragment.totalLikes}
+      ${sqlFragment.totalLikes},
+      ${sqlFragment.totalSaves},
     FROM post
     ${sqlFragment.leftJoinUser}
     ${sqlFragment.leftJoinOneCover}
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
     ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikePost : ''}
+    ${filter.name == 'userSaved' ? sqlFragment.innerJoinUserSavePost : ''}
     WHERE ${filter.sql}
     GROUP BY post.id
     ORDER BY ${sort}
@@ -211,6 +213,7 @@ export const getPostTotalCount = async (options: GetPostOptions) => {
     ${sqlFragment.leftJoinOneFile}
     ${sqlFragment.leftJoinTag}
     ${filter.name == 'userLiked' ? sqlFragment.innerJoinUserLikePost : ''}
+    ${filter.name == 'userSaved' ? sqlFragment.innerJoinUserSavePost : ''}
     WHERE ${filter.sql}
   `;
 
@@ -242,7 +245,8 @@ export const getPostById = async (postId: number) => {
       ${sqlFragment.totalComments},
       ${sqlFragment.file},
       ${sqlFragment.tags},
-      ${sqlFragment.totalLikes}
+      ${sqlFragment.totalLikes},
+      ${sqlFragment.totalSaves}
     FROM post
     ${sqlFragment.leftJoinOneCover}
     ${sqlFragment.leftJoinUser}

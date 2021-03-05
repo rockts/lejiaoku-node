@@ -34,7 +34,7 @@ export const sqlFragment = {
     LEFT JOIN LATERAL(
         SELECT *
         FROM 
-            cover
+        cover
         WHERE cover.postId = post.id
         ORDER BY cover.id DESC
         LIMIT 1
@@ -106,9 +106,21 @@ export const sqlFragment = {
       FROM user_like_post
       WHERE user_like_post.postId = post.id
     ) AS totalLikes
-        `,
+    `,
     innerJoinUserLikePost: `
     INNER JOIN user_like_post
     ON user_like_post.postId = post.id
+    `,
+    totalSaves: `
+    (
+    SELECT 
+        COUNT(user_save_post.postId)
+      FROM user_save_post
+      WHERE user_save_post.postId = post.id
+    ) AS totalSaves
+    `,
+    innerJoinUserSavePost: `
+    INNER JOIN user_save_post
+    ON user_save_post.postId = post.id
     `,
 };

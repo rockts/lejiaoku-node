@@ -10,16 +10,11 @@ const router = express.Router();
 router.get('/classifications', classificationController.index);
 
 /**
- * 获取单个 classification
+ * 获取 classification 子项列表
  */
-// router.get('/classifications/:AttrName', classificationController.show);
-
 router.get('/classifications/category', classificationController.category)
-
 router.get('/classifications/grade', classificationController.grade)
-
 router.get('/classifications/version', classificationController.version)
-
 router.get('/classifications/subject', classificationController.subject)
 
 /**

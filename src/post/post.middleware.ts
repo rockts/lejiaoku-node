@@ -90,12 +90,12 @@ export const filter = async (
         };
     }
 
-    // 多种过滤
+    // 组合过滤
     if (category && grade && version && subject) {
         request.filter = {
             name: 'post',
-            sql: 'category = ? and grade = ? and version = ? and subject = ?  ',
-
+            sql: 'category = ? and grade = ? and version = ? and subject = ?',
+            param: '',
         };
     }
 
@@ -122,6 +122,15 @@ export const filter = async (
         request.filter = {
             name: 'userLiked',
             sql: 'user_like_post.userId = ?',
+            param: user,
+        };
+    }
+
+    // 过滤出用户保存的内容
+    if (user && action == 'saved' && !tag) {
+        request.filter = {
+            name: 'userSaved',
+            sql: 'user_save_post.userId = ?',
             param: user,
         };
     }
