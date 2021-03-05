@@ -1,22 +1,5 @@
 
 import { connection } from '../app/database/mysql';
-/**
- * 获取 classification
- */
-export const getClassification = async () => {
-  const dataArry = {
-    category: null,
-    grade: null,
-    version: null,
-    subject: null,
-  }
-
-  dataArry.category = getCategory();
-  dataArry.grade = getGrade();
-  dataArry.version = getVersion();
-  dataArry.subject = getSubject();
-  return dataArry;
-};
 
 /**
  * 获取 category 列表
@@ -29,7 +12,6 @@ export const getCategory = async () => {
    `;
 
   const [data] = await connection.promise().query(statement);
-
   return data;
 };
 
