@@ -10,6 +10,7 @@ import tagRouter from '../tag/tag.router';
 import commentRouter from '../comment/comment.router';
 import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
+import saveRouter from '../save/save.router';
 import appRouter from './app.router';
 import classificationRouter from "../classification/classification.router";
 import { defaultErrorHandler } from './app.middleware';
@@ -52,6 +53,7 @@ app.use(
   avatarRouter,
   commentRouter,
   likeRouter,
+  saveRouter,
   appRouter,
   classificationRouter
 );
