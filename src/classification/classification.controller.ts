@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, request } from 'express';
 import _ from 'lodash';
-import { getClassification, getCategory, getSubject, getGrade, getVersion } from './classification.service';
+import { getCategory, getSubject, getGrade, getVersion } from './classification.service';
 
 /**
  * classification 列表
@@ -12,8 +12,17 @@ export const index = async (
 ) => {
 
     try {
-        const classification = await getClassification();
-        response.send(classification);
+        const category = await getCategory();
+        const grade = await getGrade();
+        const version = await getVersion();
+        const subject = await getSubject();
+
+        response.send({
+            category,
+            grade,
+            version,
+            subject
+        });
     } catch (error) {
         next(error);
     }
