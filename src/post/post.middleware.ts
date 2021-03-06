@@ -54,6 +54,27 @@ export const filter = async (
         sql: 'post.id IS NOT NULL',
     };
 
+    // 组合过滤
+    if (category || grade || version || subject) {
+        var sql = ' 1=1 '
+        if (category) {
+            sql += "and category='" + category + "'";
+        }
+        if (grade) {
+            sql += "and grade='" + grade + "'";
+        }
+        if (version) {
+            sql += "and version='" + version + "'";
+        }
+        if (subject) {
+            sql += "and subject='" + subject + "'";
+        }
+        request.filter = {
+            name: 'default',
+            sql: sql,
+        };
+    }
+
     // 按年级过滤
     if (grade && !tag && !user && !action && !subject && !version && !category) {
         request.filter = {
@@ -87,15 +108,6 @@ export const filter = async (
             name: 'category',
             sql: 'category = ?',
             param: category,
-        };
-    }
-
-    // 组合过滤
-    if (category && grade && version && subject) {
-        request.filter = {
-            name: 'post',
-            sql: 'category = ? and grade = ? and version = ? and subject = ?',
-            param: '',
         };
     }
 
