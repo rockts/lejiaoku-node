@@ -54,12 +54,12 @@ export const store = async (
     next: NextFunction,
 ) => {
     // 准备数据
-    const { title, description, categoryId, grade, subject, version } = request.body;
+    const { title, description, category, grade, subject, version } = request.body;
     const { id: userId } = request.user;
 
     // 创建内容
     try {
-        const data = await createPost({ title, description, userId, categoryId, grade, subject, version });
+        const data = await createPost({ title, description, userId, category, grade, subject, version });
         response.status(201).send(data);
     } catch (error) {
         next(error);
@@ -78,7 +78,7 @@ export const update = async (
     const { postId } = request.params;
 
     // 准备数据
-    const post = _.pick(request.body, ['title', 'description', 'categoryId', 'grade', 'subject', 'version']);
+    const post = _.pick(request.body, ['title', 'description', 'category', 'grade', 'subject', 'version']);
 
     // 更新
     try {

@@ -1,0 +1,46 @@
+import { connection } from '../app/database/mysql';
+
+/**
+ * 保存用户收藏内容
+ */
+export const createUserSavePost = async (
+  userId: number,
+  postId: number,
+) => {
+  // 准备查询
+  const statement = `
+    INSERT INTO
+      user_save_post (userId, postId)
+    VALUES (?, ?)
+  `;
+
+  // 执行查询
+  const [data] = await connection
+    .promise()
+    .query(statement, [userId, postId]);
+
+  // 提供数据
+  return data;
+};
+
+/**
+ * 取消用户收藏内容
+ */
+export const deleteUserSavePost = async (
+  userId: number,
+  postId: number,
+) => {
+  // 准备查询
+  const statement = `
+    DELETE FROM user_save_post
+    WHERE userId = ? AND postId = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection
+    .promise()
+    .query(statement, [userId, postId]);
+
+  // 提供数据
+  return data;
+};
