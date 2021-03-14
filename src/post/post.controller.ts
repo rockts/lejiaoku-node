@@ -28,7 +28,7 @@ export const index = async (
         });
 
         // 设置响应头部
-        response.header('X-Total-Count', totalCount);
+        response.header('TotalCount', totalCount);
     } catch (error) {
         next(error);
     }
