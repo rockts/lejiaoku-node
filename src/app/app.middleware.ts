@@ -21,11 +21,36 @@ export const defaultErrorHandler = (
   response: Response,
   next: NextFunction,
 ) => {
-  if (error.message) {
-    console.log('🚧', error.message);
+  // 输出详细的错误信息
+  console.log('🚧 错误信息:', error.message || error);
+  if (error.stack) {
+    console.log('📚 错误堆栈:', error.stack);
+  }
+  if (error.code) {
+    console.log('🔢 错误代码:', error.code);
   }
 
   let statusCode: number, message: string;
+
+  /**
+   * 处理 Multer 错误
+   */
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    statusCode = 400;
+    message = '文件大小超过限制（最大20MB）';
+    return response.status(statusCode).send({ message });
+  }
+  if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+    statusCode = 400;
+    message = '上传了意外的文件字段';
+    return response.status(statusCode).send({ message });
+  }
+  // Multer 文件过滤器错误
+  if (error.message === 'FILE_TYPE_NOT_ACCEPT') {
+    statusCode = 400;
+    message = '文件类型不允许，支持：PDF、PPT、DOC、图片、视频';
+    return response.status(statusCode).send({ message });
+  }
 
   /**
    * 处理异常
@@ -122,6 +147,26 @@ export const defaultErrorHandler = (
     case 'FILE_TYPE_NOT_ACCEPT':
       statusCode = 400;
       message = '不能上传此类型文件';
+      break;
+    case 'TITLE_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供资源标题';
+      break;
+    case 'CATEGORY_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供教学用途分类';
+      break;
+    case 'FILE_FORMAT_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供文件格式';
+      break;
+    case 'FILE_URL_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供文件URL';
+      break;
+    case 'FILE_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供资源文件';
       break;
     case 'NOT_FOUND':
       statusCode = 404;

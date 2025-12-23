@@ -4,7 +4,7 @@
   "description": "一个教学资源共享平台的 Api",
   "author": "rockts <rockts@sina.comt>",
   "scripts": {
-    "start:dev": "tsc-watch --onSuccess \"node dist/main.js\"",
+    "start:dev": "NODE_ENV=development tsc-watch --onSuccess \"node dist/main.js\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",

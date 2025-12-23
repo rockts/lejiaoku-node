@@ -3,6 +3,10 @@ import {
   GetPostOptionsFilter,
   GetPostOptionsPagination,
 } from '../src/post/post.service';
+import {
+  GetResourceOptionsFilter,
+  GetResourceOptionsPagination,
+} from '../src/resource/resource.service';
 
 declare global {
   namespace Express {
@@ -10,8 +14,8 @@ declare global {
       user: TokenPayload;
       fileMetaData: { width?: number; height?: number };
       sort: string;
-      filter: GetPostOptionsFilter;
-      pagination: GetPostOptionsPagination;
+      filter: GetPostOptionsFilter | GetResourceOptionsFilter;
+      pagination: GetPostOptionsPagination | GetResourceOptionsPagination;
     }
   }
 }
