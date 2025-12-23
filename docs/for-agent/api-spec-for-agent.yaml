@@ -1,0 +1,187 @@
+# api-spec-for-agent.yaml
+# 适用仓库：lejiaoku-node
+# 说明：本文件定义乐教库后端 API 的最小可用规格，用于约束 Agent 行为与前后端一致性。
+# Agent 在新增或修改接口前，必须遵守本文件约定。
+
+meta:
+  project: lejiaoku
+  style: REST
+  auth: token_based
+  response_format: unified
+
+common_response:
+  success:
+    code: SUCCESS
+    fields:
+      - code
+      - data
+      - message
+  error:
+    fields:
+      - code
+      - message
+
+auth:
+  roles:
+    - admin
+    - contributor
+    - subscriber
+    - user
+
+resources:
+  list:
+    description: 获取资源列表（支持搜索与筛选）
+    method: GET
+    path: /api/resources
+    auth: optional
+    query:
+      keyword:
+        type: string
+        required: false
+      category:
+        type: string
+        required: false
+        description: 教学用途分类（教材 / 教案 / 课件 / 习题 / 视频 / 其他）
+      subject:
+        type: string
+        required: false
+      grade:
+        type: number
+        required: false
+      textbook:
+        type: string
+        required: false
+    response:
+      data:
+        type: array
+        item:
+          fields:
+            - id
+            - title
+            - category
+            - subject
+            - grade
+            - textbook
+            - file_format
+            - cover_url
+            - download_count
+            - created_at
+
+  detail:
+    description: 获取单个资源详情
+    method: GET
+    path: /api/resources/{id}
+    auth: optional
+    params:
+      id:
+        type: number
+        required: true
+    response:
+      data:
+        fields:
+          - id
+          - title
+          - description
+          - category
+          - subject
+          - grade
+          - textbook
+          - file_format
+          - file_url
+          - download_count
+          - created_at
+
+  create:
+    description: 创建资源（上传资源信息，需审核）
+    method: POST
+    path: /api/resources
+    auth: contributor
+    body:
+      required:
+        - title
+        - category
+        - file_format
+        - file_url
+      optional:
+        - description
+        - subject
+        - grade
+        - textbook
+        - cover_url
+    response:
+      data:
+        fields:
+          - id
+          - status
+
+  review:
+    description: 审核资源（通过 / 拒绝）
+    method: POST
+    path: /api/resources/{id}/review
+    auth: admin
+    params:
+      id:
+        type: number
+        required: true
+    body:
+      required:
+        - status
+      description:
+        status: approved | rejected
+    response:
+      data:
+        fields:
+          - id
+          - status
+
+  delete:
+    description: 删除资源
+    method: DELETE
+    path: /api/resources/{id}
+    auth: admin
+    params:
+      id:
+        type: number
+        required: true
+    response:
+      data:
+        fields:
+          - id
+          - deleted
+
+users:
+  profile:
+    description: 获取当前用户信息
+    method: GET
+    path: /api/user/profile
+    auth: required
+    response:
+      data:
+        fields:
+          - id
+          - nickname
+          - role
+          - subscription_level
+
+comments:
+  list:
+    description: 获取资源评论列表
+    method: GET
+    path: /api/resources/{id}/comments
+    auth: optional
+
+  create:
+    description: 新增评论
+    method: POST
+    path: /api/resources/{id}/comments
+    auth: user
+    body:
+      required:
+        - content
+
+favorites:
+  toggle:
+    description: 收藏 / 取消收藏资源
+    method: POST
+    path: /api/resources/{id}/favorite
+    auth: user
