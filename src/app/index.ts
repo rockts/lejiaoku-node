@@ -15,6 +15,7 @@ import saveRouter from '../save/save.router';
 import appRouter from './app.router';
 import classificationRouter from "../classification/classification.router";
 import resourceRouter from '../resource/resource.router';
+import textbookRouter from '../textbook/textbook.router';
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -64,16 +65,22 @@ app.use(
   commentRouter,
   likeRouter,
   saveRouter,
-  appRouter,
-  classificationRouter,
-  resourceRouter // /resources
-);
+      appRouter,
+      classificationRouter,
+      resourceRouter, // /resources
+      textbookRouter // /textbook-catalog, /resources/:id/bind-textbook
+    );
 
-/**
- * Resource API 路由（前端规范路径）
- * 同时支持 /resources 和 /api/resources
- */
-app.use('/api', resourceRouter);
+    /**
+     * Resource API 路由（前端规范路径）
+     * 同时支持 /resources 和 /api/resources
+     */
+    app.use('/api', resourceRouter);
+    
+    /**
+     * Textbook API 路由
+     */
+    app.use('/api', textbookRouter);
 
 /**
  * 默认异常处理器

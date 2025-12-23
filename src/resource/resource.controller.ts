@@ -11,6 +11,9 @@ import {
     updateResourceStatus,
 } from './resource.service';
 import { APP_PORT } from '../app/app.config';
+import { getResourceTextbooks } from '../textbook/textbook.controller';
+import { processResourceAsync } from './resource-parser-worker';
+import { isCategoryAllowed, isFileFormatAllowed, isVideoResource } from './resource.constants';
 
 /**
  * 将相对路径转换为完整URL或保持相对路径
@@ -196,6 +199,31 @@ export const show = async (
         if (resource && resource.cover_url && resource.cover_url.startsWith('/')) {
             resource.cover_url = getFullUrl(request, resource.cover_url);
         }
+
+        // 附加教材信息（如果已绑定）
+        try {
+            const textbooks = await getResourceTextbooks(resource.id);
+            if (textbooks && textbooks.length > 0) {
+                resource.textbooks = textbooks;
+                // 如果有关联的教材目录，返回简化的 catalog_info（使用第一个关联的目录）
+                const firstTextbook = textbooks[0];
+                if (firstTextbook) {
+                    resource.catalog_info = {
+                        education_level: firstTextbook.education_level,
+                        grade: firstTextbook.grade,
+                        subject: firstTextbook.subject,
+                        textbook_version: firstTextbook.textbook_version,
+                        volume: firstTextbook.volume,
+                    };
+                }
+            }
+        } catch (textbookError) {
+            // 获取教材信息失败不影响主流程，继续返回资源信息
+            console.error('获取教材信息失败:', textbookError);
+        }
+
+        // chapter_info 原样返回（已经是 resource 的一部分）
+
         response.send(resource);
     } catch (error) {
         next(error);
@@ -248,7 +276,7 @@ export const store = async (
         const filename = resourceFile.filename;
         file_url = `/uploads/resources/${filename}`;
 
-        // 根据 mimetype 推断文件格式
+        // 根据 mimetype 推断文件格式（排除视频类型）
         const mimeToFormat: { [key: string]: string } = {
             'application/pdf': 'PDF',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT',
@@ -258,10 +286,17 @@ export const store = async (
             'image/png': '图片',
             'image/jpeg': '图片',
             'image/jpg': '图片',
-            'video/mp4': '视频',
-            'video/quicktime': '视频',
+            // 视频类型已移除，不再支持
         };
         file_format = mimeToFormat[resourceFile.mimetype] || '其他';
+
+        // 验证文件格式：不允许视频资源
+        if (isVideoResource(undefined, file_format)) {
+            return next(new Error('VIDEO_RESOURCE_NOT_ALLOWED'));
+        }
+        if (resourceFile.mimetype && (resourceFile.mimetype.startsWith('video/'))) {
+            return next(new Error('VIDEO_RESOURCE_NOT_ALLOWED'));
+        }
     } else {
         // 没有文件上传：检查是否有 file_url（兼容之前的接口）
         if (!request.body.file_url) {
@@ -272,6 +307,19 @@ export const store = async (
     }
 
     if (!file_format) return next(new Error('FILE_FORMAT_IS_REQUIRED'));
+
+    // 验证文件格式：不允许视频资源（再次检查，防止通过 file_url 方式上传视频）
+    if (isVideoResource(undefined, file_format)) {
+        return next(new Error('VIDEO_RESOURCE_NOT_ALLOWED'));
+    }
+    if (!isFileFormatAllowed(file_format)) {
+        // 如果不是允许的格式，且不是视频，则使用"其他"
+        if (!isVideoResource(undefined, file_format)) {
+            file_format = '其他';
+        } else {
+            return next(new Error('VIDEO_RESOURCE_NOT_ALLOWED'));
+        }
+    }
 
     // 处理封面文件：如果上传了封面文件，使用上传的文件；否则使用 request.body.cover_url
     let cover_url_value = cover_url;
@@ -286,6 +334,16 @@ export const store = async (
     const status = process.env.AUTO_APPROVE_RESOURCES === 'true' ? 'approved' : 'pending';
 
     // 准备资源数据
+    // 处理 chapter_info：章节信息（非结构化文本，可选）
+    const { chapter_info, auto_meta_status } = request.body;
+
+    // 处理 auto_meta_status：AI元数据识别状态（可选，默认 pending）
+    // 允许值：pending | done | failed
+    let autoMetaStatus: 'pending' | 'done' | 'failed' = 'pending';
+    if (auto_meta_status && ['pending', 'done', 'failed'].includes(auto_meta_status)) {
+        autoMetaStatus = auto_meta_status as 'pending' | 'done' | 'failed';
+    }
+
     // 处理 grade：前端可能传字符串或数字
     // 支持的年级格式（字符串）：
     //   - 小学：一年级上册/下册 ～ 六年级上册/下册
@@ -324,6 +382,9 @@ export const store = async (
         file_format,
         file_url,
         cover_url: cover_url_value,
+        chapter_info: chapter_info || null, // 章节信息（非结构化文本，可选）
+        auto_meta_status: autoMetaStatus, // AI元数据识别状态（默认 pending，用于未来AI识别）
+        auto_meta_result: null, // AI识别结果（JSON格式，未来使用，当前为 null）
         user_id: userId,
         status: status,
         source_type: 'official' as const, // 所有资源默认为平台资源
@@ -333,8 +394,34 @@ export const store = async (
     // 创建资源
     try {
         const data: any = await createResource(resource);
+        const newResourceId = data.insertId;
+
+        // 异步触发教材解析（不阻塞响应）
+        // 检查是否为PDF或DOCX文件（排除视频）
+        const isTextbookFile = file_url && (
+            (file_url.toLowerCase().endsWith('.pdf') ||
+                file_url.toLowerCase().endsWith('.docx') ||
+                file_url.toLowerCase().endsWith('.doc')) &&
+            !file_url.toLowerCase().match(/\.(mp4|avi|mov|wmv|flv|mkv|webm)$/i)
+        );
+
+        if (isTextbookFile) {
+            // 转换为绝对路径
+            let absoluteFilePath: string;
+            if (file_url.startsWith('/uploads/')) {
+                absoluteFilePath = path.join(process.cwd(), file_url);
+            } else if (path.isAbsolute(file_url)) {
+                absoluteFilePath = file_url;
+            } else {
+                absoluteFilePath = path.join(process.cwd(), file_url);
+            }
+
+            // 异步处理（不阻塞响应）
+            processResourceAsync(newResourceId, absoluteFilePath);
+        }
+
         response.status(201).send({
-            id: data.insertId,
+            id: newResourceId,
             status: status,
         });
     } catch (error) {

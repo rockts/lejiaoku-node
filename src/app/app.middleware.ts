@@ -45,12 +45,17 @@ export const defaultErrorHandler = (
     message = '上传了意外的文件字段';
     return response.status(statusCode).send({ message });
   }
-  // Multer 文件过滤器错误
-  if (error.message === 'FILE_TYPE_NOT_ACCEPT') {
-    statusCode = 400;
-    message = '文件类型不允许，支持：PDF、PPT、DOC、图片、视频';
-    return response.status(statusCode).send({ message });
-  }
+    // Multer 文件过滤器错误
+    if (error.message === 'VIDEO_FILE_NOT_ACCEPT') {
+      statusCode = 400;
+      message = '暂不支持视频资源上传';
+      return response.status(statusCode).send({ message });
+    }
+    if (error.message === 'FILE_TYPE_NOT_ACCEPT') {
+      statusCode = 400;
+      message = '文件类型不允许，支持：PDF、PPT、DOC、图片';
+      return response.status(statusCode).send({ message });
+    }
 
   /**
    * 处理异常
@@ -187,6 +192,22 @@ export const defaultErrorHandler = (
     case 'PASSWORD_IS_THE_SAME':
       statusCode = 400;
       message = '要修改的密码不能与原密码一样';
+      break;
+    case 'TEXTBOOK_CATALOG_ID_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供教材目录ID';
+      break;
+    case 'INVALID_ID':
+      statusCode = 400;
+      message = '无效的ID参数';
+      break;
+    case 'RESOURCE_NOT_FOUND':
+      statusCode = 404;
+      message = '资源不存在';
+      break;
+    case 'TEXTBOOK_CATALOG_NOT_FOUND':
+      statusCode = 404;
+      message = '教材目录不存在';
       break;
     default:
       statusCode = 500;

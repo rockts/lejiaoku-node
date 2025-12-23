@@ -12,14 +12,14 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 /**
- * 资源文件过滤器 - 允许教学资源文件格式
+ * 资源文件过滤器 - 允许教学资源文件格式（排除视频）
  */
 const resourceFileFilter = (
   request: Request,
   file: Express.Multer.File,
   callback: FileFilterCallback,
 ) => {
-  // 允许的文件类型
+  // 允许的文件类型（视频已移除）
   const allowedTypes = [
     'application/pdf', // PDF
     'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
@@ -29,9 +29,14 @@ const resourceFileFilter = (
     'image/png',
     'image/jpeg',
     'image/jpg',
-    'video/mp4',
-    'video/quicktime',
+    // 视频类型已移除：'video/mp4', 'video/quicktime'
   ];
+
+  // 明确拒绝视频类型
+  if (file.mimetype && file.mimetype.startsWith('video/')) {
+    callback(new Error('VIDEO_FILE_NOT_ACCEPT'));
+    return;
+  }
 
   const allowed = allowedTypes.some(type => type === file.mimetype);
 
@@ -289,8 +294,8 @@ export const filter = async (
   // 解构查询参数
   const { keyword, category, subject, grade, textbook } = request.query;
 
-  // 设置默认的过滤（只显示已审核的资源）
-  let sql = 'resource.status = "approved"';
+  // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
+  let sql = 'resource.status = "approved" AND resource.file_format != "视频" AND resource.file_format != "VIDEO" AND resource.category != "视频"';
   const params: Array<any> = [];
 
   // 按关键词过滤（搜索标题和描述）

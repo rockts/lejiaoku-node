@@ -41,6 +41,8 @@ export const getResourceList = async (options: GetResourceOptions) => {
   // 准备查询
   // 始终返回 status 字段（前端需要它来判断资源状态）
   // 同时返回 description 字段（资源介绍）和 file_url 字段（资源文件）
+  // 返回 chapter_info 字段（章节信息）
+  // 返回 auto_meta_status 和 auto_meta_result 字段（AI识别状态和结果）
   const statement = `
     SELECT
       resource.id,
@@ -55,6 +57,9 @@ export const getResourceList = async (options: GetResourceOptions) => {
       resource.cover_url,
       resource.download_count,
       resource.status,
+      resource.chapter_info,
+      resource.auto_meta_status,
+      resource.auto_meta_result,
       resource.created_at
     FROM resource
     WHERE ${filter.sql}
@@ -108,6 +113,9 @@ export const getResourceById = async (resourceId: number) => {
       resource.file_url,
       resource.cover_url,
       resource.download_count,
+      resource.chapter_info,
+      resource.auto_meta_status,
+      resource.auto_meta_result,
       resource.created_at,
       resource.updated_at
     FROM resource
@@ -162,6 +170,9 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
       resource.cover_url,
       resource.download_count,
       resource.status,
+      resource.chapter_info,
+      resource.auto_meta_status,
+      resource.auto_meta_result,
       resource.created_at,
       resource.updated_at
     FROM resource

@@ -1,5 +1,6 @@
 import express from 'express';
 import * as resourceController from './resource.controller';
+import * as resourceAutoMetaController from './resource-auto-meta.controller';
 import { authGuard } from '../auth/auth.middleware';
 import { filter, adminFilter, myResourcesFilter, paginate, resourceFileInterceptor, resourceWithCoverInterceptor } from './resource.middleware';
 
@@ -31,6 +32,14 @@ router.get(
 router.get(
   '/resources/:id',
   resourceController.show,
+);
+
+/**
+ * 获取资源的自动解析元数据
+ */
+router.get(
+  '/resources/:id/auto-meta',
+  resourceAutoMetaController.getAutoMeta,
 );
 
 /**
