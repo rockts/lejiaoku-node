@@ -43,6 +43,14 @@ router.get(
 );
 
 /**
+ * 自动解析资源结构（最小可用版本，用于验证链路）
+ */
+router.post(
+  '/resources/:id/auto-parse',
+  resourceController.autoParse,
+);
+
+/**
  * 下载资源文件（强制下载，不预览）
  */
 router.get(

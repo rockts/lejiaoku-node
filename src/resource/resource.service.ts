@@ -2,47 +2,32 @@ import { connection } from '../app/database/mysql';
 import { ResourceModel } from './resource.model';
 
 /**
- * 获取资源列表的过滤选项
- */
-export interface GetResourceOptionsFilter {
-  name: string;
-  sql?: string;
-  params?: Array<any>;
-}
-
-/**
- * 获取资源列表的分页选项
- */
-export interface GetResourceOptionsPagination {
-  limit: number;
-  offset: number;
-}
-
-/**
- * 获取资源列表的选项
- */
-interface GetResourceOptions {
-  filter?: GetResourceOptionsFilter;
-  pagination?: GetResourceOptionsPagination;
-}
-
-/**
  * 获取资源列表
  */
-export const getResourceList = async (options: GetResourceOptions) => {
-  const {
-    filter,
-    pagination: { limit, offset },
-  } = options;
+export const getResourceList = async (options: {
+  filter?: { name: string; sql: string; params: Array<any> };
+  pagination: { limit: number; offset: number };
+}) => {
+  const { filter, pagination } = options;
 
-  // SQL 参数
-  let params: Array<any> = [...(filter.params || []), limit, offset];
+  // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
+  let sql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+  const params: Array<any> = [];
 
-  // 准备查询
-  // 始终返回 status 字段（前端需要它来判断资源状态）
-  // 同时返回 description 字段（资源介绍）和 file_url 字段（资源文件）
-  // 返回 chapter_info 字段（章节信息）
-  // 返回 auto_meta_status 和 auto_meta_result 字段（AI识别状态和结果）
+  if (filter && filter.name === 'adminFilter') {
+    // 管理员过滤器，显示所有状态的资源，但仍排除视频
+    sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+    params.push(...filter.params);
+  } else if (filter && filter.name === 'myResourcesFilter') {
+    // 我的资源过滤器，显示用户所有资源，不区分状态，但仍排除视频
+    sql = `resource.user_id = ? AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    params.push(...filter.params);
+  } else if (filter && filter.sql) {
+    // 其他自定义过滤器
+    sql = `${filter.sql} AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    params.push(...filter.params);
+  }
+
   const statement = `
     SELECT
       resource.id,
@@ -52,54 +37,71 @@ export const getResourceList = async (options: GetResourceOptions) => {
       resource.subject,
       resource.grade,
       resource.textbook,
+      resource.chapter_info,
       resource.file_format,
       resource.file_url,
       resource.cover_url,
       resource.download_count,
       resource.status,
-      resource.chapter_info,
       resource.auto_meta_status,
       resource.auto_meta_result,
-      resource.created_at
+      resource.created_at,
+      resource.updated_at
     FROM resource
-    WHERE ${filter.sql}
+    WHERE ${sql}
     ORDER BY resource.created_at DESC
     LIMIT ?
     OFFSET ?
   `;
 
-  // 执行查询
-  const [data] = await connection.promise().query(statement, params);
+  const [data] = await connection
+    .promise()
+    .query(statement, [...params, pagination.limit, pagination.offset]);
 
-  // 提供数据
   return data;
 };
 
 /**
- * 统计资源数量
+ * 获取资源总数
  */
-export const getResourceTotalCount = async (options: GetResourceOptions) => {
+export const getResourceTotalCount = async (options: {
+  filter?: { name: string; sql: string; params: Array<any> };
+}) => {
   const { filter } = options;
 
-  // 准备查询
+  // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
+  let sql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+  const params: Array<any> = [];
+
+  if (filter && filter.name === 'adminFilter') {
+    // 管理员过滤器，显示所有状态的资源，但仍排除视频
+    sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+    params.push(...filter.params);
+  } else if (filter && filter.name === 'myResourcesFilter') {
+    // 我的资源过滤器，显示用户所有资源，不区分状态，但仍排除视频
+    sql = `resource.user_id = ? AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    params.push(...filter.params);
+  } else if (filter && filter.sql) {
+    // 其他自定义过滤器
+    sql = `${filter.sql} AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    params.push(...filter.params);
+  }
+
   const statement = `
-    SELECT COUNT(*) AS total
+    SELECT COUNT(*) as total
     FROM resource
-    WHERE ${filter.sql}
+    WHERE ${sql}
   `;
 
-  // 执行查询
-  const [data] = await connection.promise().query(statement, filter.params || []);
+  const [data] = await connection.promise().query(statement, params);
 
-  // 提供结果
-  return data[0].total;
+  return (data as any)[0].total;
 };
 
 /**
- * 按 ID 获取资源详情
+ * 根据 ID 获取资源（仅已审核）
  */
 export const getResourceById = async (resourceId: number) => {
-  // 准备查询
   const statement = `
     SELECT
       resource.id,
@@ -109,11 +111,11 @@ export const getResourceById = async (resourceId: number) => {
       resource.subject,
       resource.grade,
       resource.textbook,
+      resource.chapter_info,
       resource.file_format,
       resource.file_url,
       resource.cover_url,
       resource.download_count,
-      resource.chapter_info,
       resource.auto_meta_status,
       resource.auto_meta_result,
       resource.created_at,
@@ -121,41 +123,17 @@ export const getResourceById = async (resourceId: number) => {
     FROM resource
     WHERE resource.id = ? AND resource.status = "approved"
   `;
-
-  // 执行查询
   const [data] = await connection.promise().query(statement, resourceId);
-
-  // 没找到资源
   if (!data || !data[0] || !data[0].id) {
     throw new Error('NOT_FOUND');
   }
-
-  // 提供数据
   return data[0];
 };
 
 /**
- * 创建资源
- */
-export const createResource = async (resource: ResourceModel) => {
-  // 准备查询
-  const statement = `
-    INSERT INTO resource
-    SET ?
-  `;
-
-  // 执行查询
-  const [data] = await connection.promise().query(statement, resource);
-
-  // 提供数据
-  return data as any;
-};
-
-/**
- * 按 ID 获取资源详情（管理员用，不检查 status）
+ * 根据 ID 获取资源（管理员，不限制状态）
  */
 export const getResourceByIdForAdmin = async (resourceId: number) => {
-  // 准备查询
   const statement = `
     SELECT
       resource.id,
@@ -165,12 +143,12 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
       resource.subject,
       resource.grade,
       resource.textbook,
+      resource.chapter_info,
       resource.file_format,
       resource.file_url,
       resource.cover_url,
       resource.download_count,
       resource.status,
-      resource.chapter_info,
       resource.auto_meta_status,
       resource.auto_meta_result,
       resource.created_at,
@@ -178,17 +156,24 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
     FROM resource
     WHERE resource.id = ?
   `;
-
-  // 执行查询
   const [data] = await connection.promise().query(statement, resourceId);
-
-  // 没找到资源
   if (!data || !data[0] || !data[0].id) {
     throw new Error('NOT_FOUND');
   }
-
-  // 提供数据
   return data[0];
+};
+
+/**
+ * 创建资源
+ */
+export const createResource = async (resource: ResourceModel) => {
+  const statement = `
+    INSERT INTO resource
+    SET ?
+  `;
+
+  const [data] = await connection.promise().query(statement, resource);
+  return data as any;
 };
 
 /**
@@ -196,21 +181,38 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
  */
 export const updateResourceStatus = async (
   resourceId: number,
-  status: 'approved' | 'rejected',
+  status: string,
 ) => {
-  // 准备查询
   const statement = `
     UPDATE resource
-    SET status = ?, updated_at = NOW()
+    SET status = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `;
 
-  // 执行查询
-  const [data] = await connection
-    .promise()
-    .query(statement, [status, resourceId]);
-
-  // 提供数据
-  return data;
+  await connection.promise().query(statement, [status, resourceId]);
 };
 
+/**
+ * 更新资源的自动解析结果
+ */
+export const updateResourceAutoParse = async (
+  resourceId: number,
+  autoMetaResult: object,
+  chapterInfo: string,
+) => {
+  const statement = `
+    UPDATE resource
+    SET 
+      auto_meta_result = ?,
+      chapter_info = ?,
+      auto_meta_status = 'done',
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `;
+
+  await connection.promise().query(statement, [
+    JSON.stringify(autoMetaResult),
+    chapterInfo,
+    resourceId,
+  ]);
+};

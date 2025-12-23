@@ -1,108 +1,210 @@
 import { Request, Response, NextFunction } from 'express';
+import { connection } from '../app/database/mysql';
 import {
-  getTextbookCatalogList,
-  getTextbookCatalogById,
-  getResourceTextbookList,
-  createResourceTextbookMap,
-  checkResourceExists,
+  createTextbook,
+  getTextbookById,
+  getTextbookByResourceId,
+  createTextbookStructures,
+  getTextbookStructureTree,
 } from './textbook.service';
+import {
+  extractTextbookInfo,
+  parseTextbookStructure,
+} from './textbook-parser.service';
+import { TextbookModel } from './textbook.model';
 
 /**
- * 获取所有教材骨架
+ * 获取教材信息（包含结构树）
  */
-export const index = async (
+export const show = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
   try {
-    const catalogs = await getTextbookCatalogList();
-    response.send(catalogs);
+    const { id } = request.params;
+    const textbookId = parseInt(id, 10);
+
+    // 获取教材基本信息
+    const textbook = await getTextbookById(textbookId);
+
+    // 获取结构树
+    const structureTree = await getTextbookStructureTree(textbookId);
+
+    response.send({
+      textbook: textbook,
+      structure: structureTree,
+    });
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * 绑定资源与教材
+ * 根据 resource_id 获取教材信息
  */
-export const bindTextbook = async (
+export const showByResourceId = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  const { id } = request.params;
-  const { textbook_catalog_id } = request.body;
-
-  // 验证参数
-  if (!textbook_catalog_id) {
-    return next(new Error('TEXTBOOK_CATALOG_ID_IS_REQUIRED'));
-  }
-
-  const resourceId = parseInt(id, 10);
-  const catalogId = parseInt(textbook_catalog_id, 10);
-
-  if (isNaN(resourceId) || isNaN(catalogId)) {
-    return next(new Error('INVALID_ID'));
-  }
-
   try {
-    // 检查资源是否存在
-    const resourceExists = await checkResourceExists(resourceId);
-    if (!resourceExists) {
+    const { resourceId } = request.params;
+    const resourceIdNum = parseInt(resourceId, 10);
+
+    const textbook = await getTextbookByResourceId(resourceIdNum);
+
+    if (!textbook) {
+      return response.status(404).send({ error: '教材不存在' });
+    }
+
+    // 获取结构树
+    const structureTree = await getTextbookStructureTree(textbook.id);
+
+    response.send({
+      textbook: textbook,
+      structure: structureTree,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 处理教材文件上传后的结构化入库
+ */
+export async function processTextbookUpload(
+  resourceId: number,
+  filePath: string,
+  filename: string
+): Promise<number> {
+  try {
+    console.log(`[教材解析] 开始处理资源 ID: ${resourceId}`);
+
+    // 1. 提取教材基本信息
+    const textbookInfo = await extractTextbookInfo(filePath, filename, resourceId);
+
+    // 设置默认值
+    const textbookData: TextbookModel = {
+      title: textbookInfo.title || filename.replace(/\.[^.]+$/, ''),
+      cover_url: null, // TODO: 提取封面
+      description: textbookInfo.description || null,
+      education_level: textbookInfo.education_level || '小学',
+      subject: textbookInfo.subject || '其他',
+      textbook_version: textbookInfo.textbook_version || null,
+      volume: textbookInfo.volume || '上册',
+      resource_id: resourceId,
+      source_type: 'official',
+      status: 'approved', // 开发环境直接批准
+    };
+
+    // 2. 创建教材记录
+    const createResult: any = await createTextbook(textbookData);
+    const textbookId = createResult.insertId;
+
+    console.log(`[教材解析] 教材创建成功，ID: ${textbookId}`);
+
+    // 3. 解析目录结构
+    const structures = await parseTextbookStructure(filePath, textbookId);
+
+    if (structures.length > 0) {
+      // 批量插入所有结构节点（service层会处理parent_id的更新）
+      await createTextbookStructures(structures);
+      console.log(`[教材解析] 目录结构创建成功，共 ${structures.length} 个节点`);
+    } else {
+      console.log(`[教材解析] 未解析到目录结构`);
+    }
+
+    return textbookId;
+  } catch (error) {
+    console.error(`[教材解析] 处理失败:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 获取资源关联的教材信息（用于 resource.controller.ts）
+ */
+export const getResourceTextbooks = async (resourceId: number) => {
+  const statement = `
+    SELECT
+      textbook_catalog.id,
+      textbook_catalog.education_level,
+      textbook_catalog.grade,
+      textbook_catalog.subject,
+      textbook_catalog.textbook_version,
+      textbook_catalog.volume
+    FROM resource_textbook_map
+    JOIN textbook_catalog ON resource_textbook_map.textbook_catalog_id = textbook_catalog.id
+    WHERE resource_textbook_map.resource_id = ?
+  `;
+  
+  const [data] = await connection.promise().query(statement, resourceId);
+  return data;
+};
+
+/**
+ * 获取教材目录列表（骨架）
+ */
+export const getTextbookCatalogList = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    const statement = `
+      SELECT *
+      FROM textbook_catalog
+      ORDER BY education_level, grade, subject, textbook_version, volume
+    `;
+    
+    const [data] = await connection.promise().query(statement);
+    response.send(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 绑定资源到教材目录
+ */
+export const bindResourceToTextbook = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = request.params;
+    const { textbook_catalog_id } = request.body;
+    
+    // 验证资源是否存在
+    const resourceCheck = await connection.promise().query(
+      'SELECT id FROM resource WHERE id = ?',
+      [id]
+    );
+    if (!(resourceCheck[0] as any[]).length) {
       return next(new Error('RESOURCE_NOT_FOUND'));
     }
-
-    // 检查教材骨架是否存在
-    const catalog = await getTextbookCatalogById(catalogId);
-    if (!catalog) {
+    
+    // 验证教材目录是否存在
+    const catalogCheck = await connection.promise().query(
+      'SELECT id FROM textbook_catalog WHERE id = ?',
+      [textbook_catalog_id]
+    );
+    if (!(catalogCheck[0] as any[]).length) {
       return next(new Error('TEXTBOOK_CATALOG_NOT_FOUND'));
     }
-
-    // 创建关联（使用 INSERT IGNORE 实现幂等）
-    await createResourceTextbookMap({
-      resource_id: resourceId,
-      textbook_catalog_id: catalogId,
-      source: 'manual',
-      confidence: null,
-    });
-
-    // 返回成功响应
-    response.status(201).send({
-      message: '绑定成功',
-      resource_id: resourceId,
-      textbook_catalog_id: catalogId,
-    });
+    
+    // 插入关联（幂等）
+    const statement = `
+      INSERT INTO resource_textbook_map (resource_id, textbook_catalog_id, source)
+      VALUES (?, ?, 'manual')
+      ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
+    `;
+    
+    await connection.promise().query(statement, [id, textbook_catalog_id]);
+    response.send({ success: true });
   } catch (error) {
     next(error);
   }
 };
-
-/**
- * 获取资源关联的教材列表（用于在资源详情中附加教材信息）
- */
-export const getResourceTextbooks = async (
-  resourceId: number,
-): Promise<any[]> => {
-  try {
-    const textbooks: any = await getResourceTextbookList(resourceId);
-    // 格式化返回数据
-    if (Array.isArray(textbooks)) {
-      return textbooks.map((item: any) => ({
-        id: item.textbook_id,
-        education_level: item.education_level,
-        grade: item.grade,
-        subject: item.subject,
-        textbook_version: item.textbook_version,
-        volume: item.volume,
-        source: item.source,
-        bind_time: item.created_at,
-      }));
-    }
-    return [];
-  } catch (error) {
-    // 如果出错，返回空数组，不影响主流程
-    return [];
-  }
-};
-

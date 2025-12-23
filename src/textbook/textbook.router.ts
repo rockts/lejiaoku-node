@@ -1,23 +1,32 @@
 import express from 'express';
-import * as textbookController from './textbook.controller';
+import {
+  show,
+  showByResourceId,
+  getTextbookCatalogList,
+  bindResourceToTextbook,
+} from './textbook.controller';
 
 const router = express.Router();
 
 /**
- * 获取所有教材骨架
+ * 获取所有教材目录骨架
  */
-router.get(
-  '/textbook-catalog',
-  textbookController.index,
-);
+router.get('/textbook-catalog', getTextbookCatalogList);
 
 /**
- * 绑定资源与教材
+ * 绑定资源与教材目录
  */
-router.post(
-  '/resources/:id/bind-textbook',
-  textbookController.bindTextbook,
-);
+router.post('/resources/:id/bind-textbook', bindResourceToTextbook);
+
+/**
+ * 获取教材信息（包含结构树）
+ */
+router.get('/textbooks/:id', show);
+
+/**
+ * 根据 resource_id 获取教材信息
+ */
+router.get('/textbooks/by-resource/:resourceId', showByResourceId);
 
 /**
  * 导出路由

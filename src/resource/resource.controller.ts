@@ -9,9 +9,10 @@ import {
     createResource,
     getResourceByIdForAdmin,
     updateResourceStatus,
+    updateResourceAutoParse,
 } from './resource.service';
 import { APP_PORT } from '../app/app.config';
-import { getResourceTextbooks } from '../textbook/textbook.controller';
+import { getResourceTextbooks, processTextbookUpload } from '../textbook/textbook.controller'; // 获取资源关联的教材目录
 import { processResourceAsync } from './resource-parser-worker';
 import { isCategoryAllowed, isFileFormatAllowed, isVideoResource } from './resource.constants';
 
@@ -396,16 +397,24 @@ export const store = async (
         const data: any = await createResource(resource);
         const newResourceId = data.insertId;
 
-        // 异步触发教材解析（不阻塞响应）
-        // 检查是否为PDF或DOCX文件（排除视频）
+        // 异步触发解析（不阻塞响应）
+        // 检查是否为PDF或DOCX文件，且不是视频文件
         const isTextbookFile = file_url && (
-            (file_url.toLowerCase().endsWith('.pdf') ||
-                file_url.toLowerCase().endsWith('.docx') ||
-                file_url.toLowerCase().endsWith('.doc')) &&
-            !file_url.toLowerCase().match(/\.(mp4|avi|mov|wmv|flv|mkv|webm)$/i)
+            file_url.toLowerCase().endsWith('.pdf') ||
+            file_url.toLowerCase().endsWith('.docx') ||
+            file_url.toLowerCase().endsWith('.doc')
         );
+        const isVideo = isVideoResource(category, file_format) || (file_url && (
+            file_url.toLowerCase().endsWith('.mp4') ||
+            file_url.toLowerCase().endsWith('.avi') ||
+            file_url.toLowerCase().endsWith('.mov') ||
+            file_url.toLowerCase().endsWith('.wmv') ||
+            file_url.toLowerCase().endsWith('.flv') ||
+            file_url.toLowerCase().endsWith('.mkv') ||
+            file_url.toLowerCase().endsWith('.webm')
+        ));
 
-        if (isTextbookFile) {
+        if (isTextbookFile && !isVideo) {
             // 转换为绝对路径
             let absoluteFilePath: string;
             if (file_url.startsWith('/uploads/')) {
@@ -416,8 +425,23 @@ export const store = async (
                 absoluteFilePath = path.join(process.cwd(), file_url);
             }
 
-            // 异步处理（不阻塞响应）
-            processResourceAsync(newResourceId, absoluteFilePath);
+            // 如果是教材类型资源，进行教材结构化入库
+            if (category === '教材') {
+                setImmediate(async () => {
+                    try {
+                        const filename = path.basename(file_url);
+                        await processTextbookUpload(newResourceId, absoluteFilePath, filename);
+                        console.log(`[教材入库] 资源 ID ${newResourceId} 教材结构化入库完成`);
+                    } catch (error) {
+                        console.error(`[教材入库] 资源 ID ${newResourceId} 处理失败:`, error);
+                    }
+                });
+            } else {
+                // 其他资源类型的AI解析
+                setImmediate(() => {
+                    processResourceAsync(newResourceId, absoluteFilePath);
+                });
+            }
         }
 
         response.status(201).send({
@@ -529,6 +553,54 @@ export const updateStatus = async (
 
         // 返回更新后的资源
         response.send(updatedResource);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * 自动解析资源结构（最小可用版本，用于验证链路）
+ * POST /api/resources/:id/auto-parse
+ */
+export const autoParse = async (
+    request: Request,
+    response: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { id } = request.params;
+        const resourceId = parseInt(id, 10);
+
+        // 查询资源是否存在
+        const resource: any = await getResourceByIdForAdmin(resourceId);
+
+        // 构造固定写死的教材结构 JSON（示例）
+        const autoMetaResult = {
+            education_level: "elementary",
+            subject: "语文",
+            grade: "二年级",
+            volume: "上册",
+            textbook_version: "人教版",
+            structure: [
+                {
+                    unit: "第一单元",
+                    title: "春天来了"
+                }
+            ]
+        };
+
+        // 更新 chapter_info 为示例字符串
+        const chapterInfo = "第一单元 春天来了";
+
+        // 更新资源
+        await updateResourceAutoParse(resourceId, autoMetaResult, chapterInfo);
+
+        // 返回成功响应
+        response.send({
+            success: true,
+            message: '资源自动解析完成',
+            resource_id: resourceId,
+        });
     } catch (error) {
         next(error);
     }
