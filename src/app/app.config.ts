@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// 明确指定 .env 文件路径
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 /**
  * 应用配置
@@ -22,6 +24,9 @@ export const {
  * 密钥配置
  */
 export let { PRIVATE_KEY, PUBLIC_KEY } = process.env;
+if (!PRIVATE_KEY || !PUBLIC_KEY) {
+  throw new Error('PRIVATE_KEY 和 PUBLIC_KEY 环境变量必须配置');
+}
 PRIVATE_KEY = Buffer.from(PRIVATE_KEY, 'base64').toString();
 PUBLIC_KEY = Buffer.from(PUBLIC_KEY, 'base64').toString();
 
