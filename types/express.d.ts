@@ -10,12 +10,12 @@ import {
 
 declare global {
   namespace Express {
-    export interface Request {
-      user: TokenPayload;
-      fileMetaData: { width?: number; height?: number };
-      sort: string;
-      filter: GetPostOptionsFilter | GetResourceOptionsFilter;
-      pagination: GetPostOptionsPagination | GetResourceOptionsPagination;
-    }
+      export interface Request {
+        user: TokenPayload;
+        fileMetaData: { width?: number; height?: number };
+        sort: string;
+        filter: GetPostOptionsFilter | GetResourceOptionsFilter;
+        pagination: GetPostOptionsPagination | GetResourceOptionsPagination;
+      }
   }
 }

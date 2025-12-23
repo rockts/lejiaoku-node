@@ -164,14 +164,18 @@ export const defaultErrorHandler = (
       statusCode = 400;
       message = '请提供文件URL';
       break;
-    case 'FILE_IS_REQUIRED':
-      statusCode = 400;
-      message = '请提供资源文件';
-      break;
-    case 'NOT_FOUND':
-      statusCode = 404;
-      message = '没找到 ~~ 🦖';
-      break;
+          case 'FILE_IS_REQUIRED':
+            statusCode = 400;
+            message = '请提供资源文件';
+            break;
+          case 'INVALID_STATUS':
+            statusCode = 400;
+            message = '状态值无效，只能是 approved 或 rejected';
+            break;
+          case 'NOT_FOUND':
+            statusCode = 404;
+            message = '没找到 ~~ 🦖';
+            break;
     case 'USER_NOT_FOUND':
       statusCode = 404;
       message = '没找到这个用户 ~~';

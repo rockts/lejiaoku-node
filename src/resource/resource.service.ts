@@ -39,17 +39,22 @@ export const getResourceList = async (options: GetResourceOptions) => {
   let params: Array<any> = [...(filter.params || []), limit, offset];
 
   // 准备查询
+  // 始终返回 status 字段（前端需要它来判断资源状态）
+  // 同时返回 description 字段（资源介绍）和 file_url 字段（资源文件）
   const statement = `
     SELECT
       resource.id,
       resource.title,
+      resource.description,
       resource.category,
       resource.subject,
       resource.grade,
       resource.textbook,
       resource.file_format,
+      resource.file_url,
       resource.cover_url,
       resource.download_count,
+      resource.status,
       resource.created_at
     FROM resource
     WHERE ${filter.sql}
@@ -136,5 +141,65 @@ export const createResource = async (resource: ResourceModel) => {
 
   // 提供数据
   return data as any;
+};
+
+/**
+ * 按 ID 获取资源详情（管理员用，不检查 status）
+ */
+export const getResourceByIdForAdmin = async (resourceId: number) => {
+  // 准备查询
+  const statement = `
+    SELECT
+      resource.id,
+      resource.title,
+      resource.description,
+      resource.category,
+      resource.subject,
+      resource.grade,
+      resource.textbook,
+      resource.file_format,
+      resource.file_url,
+      resource.cover_url,
+      resource.download_count,
+      resource.status,
+      resource.created_at,
+      resource.updated_at
+    FROM resource
+    WHERE resource.id = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection.promise().query(statement, resourceId);
+
+  // 没找到资源
+  if (!data || !data[0] || !data[0].id) {
+    throw new Error('NOT_FOUND');
+  }
+
+  // 提供数据
+  return data[0];
+};
+
+/**
+ * 更新资源状态
+ */
+export const updateResourceStatus = async (
+  resourceId: number,
+  status: 'approved' | 'rejected',
+) => {
+  // 准备查询
+  const statement = `
+    UPDATE resource
+    SET status = ?, updated_at = NOW()
+    WHERE id = ?
+  `;
+
+  // 执行查询
+  const [data] = await connection
+    .promise()
+    .query(statement, [status, resourceId]);
+
+  // 提供数据
+  return data;
 };
 

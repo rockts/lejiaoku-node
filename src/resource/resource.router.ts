@@ -1,7 +1,7 @@
 import express from 'express';
 import * as resourceController from './resource.controller';
 import { authGuard } from '../auth/auth.middleware';
-import { filter, paginate, resourceFileInterceptor } from './resource.middleware';
+import { filter, adminFilter, myResourcesFilter, paginate, resourceFileInterceptor, resourceWithCoverInterceptor } from './resource.middleware';
 
 const router = express.Router();
 
@@ -13,6 +13,16 @@ router.get(
   filter,
   paginate(30),
   resourceController.index,
+);
+
+/**
+ * 我的资源列表（当前用户的所有资源）
+ */
+router.get(
+  '/my/resources',
+  myResourcesFilter, // 过滤当前用户的资源
+  paginate(30),
+  resourceController.myResources,
 );
 
 /**
@@ -39,8 +49,31 @@ router.get(
 router.post(
   '/resources',
   // authGuard, // 临时注释以支持测试
-  resourceFileInterceptor, // 文件上传中间件
+  resourceWithCoverInterceptor, // 文件上传中间件（支持资源文件 + 封面文件同时上传）
   resourceController.store,
+);
+
+/**
+ * 管理员资源列表（显示所有状态的资源，用于审核）
+ * 注意：这是管理员接口，生产环境需要添加权限验证
+ * 开发期暂不加 authGuard
+ */
+router.get(
+  '/admin/resources',
+  adminFilter, // 管理员过滤器（不过滤status，或按status过滤）
+  paginate(30),
+  resourceController.adminIndex,
+);
+
+/**
+ * 审核资源状态（管理员接口）
+ * 注意：这是管理员接口，生产环境需要添加权限验证
+ * 开发期暂不加 authGuard
+ */
+router.patch(
+  '/admin/resources/:id/status',
+  // authGuard, // TODO: 生产环境需要添加权限验证
+  resourceController.updateStatus,
 );
 
 /**

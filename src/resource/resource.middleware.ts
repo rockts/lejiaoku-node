@@ -12,7 +12,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 /**
- * 文件过滤器 - 允许教学资源文件格式
+ * 资源文件过滤器 - 允许教学资源文件格式
  */
 const resourceFileFilter = (
   request: Request,
@@ -39,6 +39,31 @@ const resourceFileFilter = (
     callback(null, true);
   } else {
     callback(new Error('FILE_TYPE_NOT_ACCEPT'));
+  }
+};
+
+/**
+ * 封面图片过滤器
+ */
+const coverFileFilter = (
+  request: Request,
+  file: Express.Multer.File,
+  callback: FileFilterCallback,
+) => {
+  // 允许的图片类型
+  const allowedTypes = [
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/gif',
+  ];
+
+  const allowed = allowedTypes.some(type => type === file.mimetype);
+
+  if (allowed) {
+    callback(null, true);
+  } else {
+    callback(new Error('COVER_TYPE_NOT_ACCEPT'));
   }
 };
 
@@ -128,12 +153,133 @@ const resourceUpload = multer({
 });
 
 /**
- * 文件上传拦截器
+ * 封面存储配置
+ */
+const coverUploadDir = 'uploads/cover';
+if (!fs.existsSync(coverUploadDir)) {
+  fs.mkdirSync(coverUploadDir, { recursive: true });
+}
+
+const coverStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, coverUploadDir);
+  },
+  filename: (req, file, cb) => {
+    // 封面文件名：使用时间戳 + 原始文件名（简化处理）
+    const timestamp = Date.now();
+    const originalName = file.originalname || '';
+    const ext = path.extname(originalName);
+    const name = path.basename(originalName, ext).replace(/[^\w\-_]/g, '');
+    const filename = `${timestamp}-${name || 'cover'}${ext}`;
+    cb(null, filename);
+  },
+});
+
+/**
+ * 创建 Multer 实例（封面文件）
+ */
+const coverUpload = multer({
+  storage: coverStorage,
+  fileFilter: coverFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+});
+
+/**
+ * 资源文件上传拦截器（仅资源文件）
  */
 export const resourceFileInterceptor = resourceUpload.single('file');
 
 /**
- * 过滤列表
+ * 资源文件 + 封面文件上传拦截器（支持同时上传）
+ * 使用 multer 的 fields 方法来处理多个文件字段
+ */
+export const resourceWithCoverInterceptor = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  // 使用 multer 的 fields 方法，但需要自定义 storage 来处理不同字段
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        if (file.fieldname === 'file') {
+          cb(null, uploadDir);
+        } else if (file.fieldname === 'cover') {
+          cb(null, coverUploadDir);
+        } else {
+          cb(new Error('UNEXPECTED_FILE_FIELD'), '');
+        }
+      },
+      filename: (req, file, cb) => {
+        if (file.fieldname === 'file') {
+          // 使用资源文件的文件名处理逻辑
+          const timestamp = Date.now();
+          let originalName = file.originalname || '';
+          originalName = originalName.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+          originalName = originalName.replace(/[\/\\?%*:|"<>]/g, '');
+          try {
+            const cleaned = originalName.replace(/\0/g, '');
+            if (/[\x80-\xFF]/.test(cleaned)) {
+              try {
+                originalName = Buffer.from(cleaned, 'latin1').toString('utf8');
+                originalName = originalName.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+              } catch (e) {
+                originalName = cleaned;
+              }
+            } else {
+              originalName = cleaned;
+            }
+          } catch (e) {
+            originalName = 'file';
+          }
+          const originalExt = path.extname(originalName) || '';
+          let originalBaseName = path.basename(originalName, originalExt) || 'file';
+          originalBaseName = originalBaseName.replace(/\s+/g, '_');
+          originalBaseName = originalBaseName.replace(/[^\w\-_]/g, '');
+          if (!originalBaseName || originalBaseName.trim() === '') {
+            originalBaseName = 'file';
+          }
+          const safeExt = originalExt.replace(/[^\w\.]/g, '').substring(0, 10);
+          let name = originalBaseName.substring(0, 100);
+          const filename = `${timestamp}-${name}${safeExt}`;
+          cb(null, filename);
+        } else if (file.fieldname === 'cover') {
+          // 使用封面文件的简化逻辑
+          const timestamp = Date.now();
+          const originalName = file.originalname || '';
+          const ext = path.extname(originalName);
+          const name = path.basename(originalName, ext).replace(/[^\w\-_]/g, '');
+          const filename = `${timestamp}-${name || 'cover'}${ext}`;
+          cb(null, filename);
+        } else {
+          cb(new Error('UNEXPECTED_FILE_FIELD'), '');
+        }
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (file.fieldname === 'file') {
+        resourceFileFilter(req, file, cb);
+      } else if (file.fieldname === 'cover') {
+        coverFileFilter(req, file, cb);
+      } else {
+        cb(new Error('UNEXPECTED_FILE_FIELD'));
+      }
+    },
+    limits: {
+      fileSize: 20 * 1024 * 1024, // 20MB
+    },
+  }).fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'cover', maxCount: 1 },
+  ]);
+
+  upload(req, res, next);
+};
+
+/**
+ * 过滤列表（普通用户，只显示已审核的资源）
  */
 export const filter = async (
   request: Request,
@@ -143,7 +289,7 @@ export const filter = async (
   // 解构查询参数
   const { keyword, category, subject, grade, textbook } = request.query;
 
-  // 设置默认的过滤
+  // 设置默认的过滤（只显示已审核的资源）
   let sql = 'resource.status = "approved"';
   const params: Array<any> = [];
 
@@ -181,6 +327,103 @@ export const filter = async (
   // 设置请求中的过滤
   request.filter = {
     name: 'default',
+    sql: sql,
+    params: params,
+  };
+
+  // 下一步
+  next();
+};
+
+/**
+ * 过滤列表（管理员用，显示所有状态的资源）
+ */
+export const adminFilter = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 解构查询参数
+  const { keyword, category, subject, grade, textbook, status } = request.query;
+
+  // 设置默认的过滤（显示所有状态，或按status过滤）
+  let sql = '1 = 1'; // 不过滤status
+  const params: Array<any> = [];
+
+  // 如果指定了status，则按status过滤
+  if (status) {
+    sql += ' AND resource.status = ?';
+    params.push(status);
+  }
+
+  // 按关键词过滤（搜索标题和描述）
+  if (keyword) {
+    sql += ' AND (resource.title LIKE ? OR resource.description LIKE ?)';
+    const keywordPattern = `%${keyword}%`;
+    params.push(keywordPattern, keywordPattern);
+  }
+
+  // 按教学用途分类过滤
+  if (category) {
+    sql += ' AND resource.category = ?';
+    params.push(category);
+  }
+
+  // 按学科过滤
+  if (subject) {
+    sql += ' AND resource.subject = ?';
+    params.push(subject);
+  }
+
+  // 按年级过滤
+  if (grade) {
+    sql += ' AND resource.grade = ?';
+    params.push(parseInt(grade as string, 10));
+  }
+
+  // 按教材版本过滤
+  if (textbook) {
+    sql += ' AND resource.textbook = ?';
+    params.push(textbook);
+  }
+
+  // 设置请求中的过滤
+  request.filter = {
+    name: 'admin',
+    sql: sql,
+    params: params,
+  };
+
+  // 下一步
+  next();
+};
+
+/**
+ * 过滤列表（当前用户的所有资源，不区分status）
+ */
+export const myResourcesFilter = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 获取当前用户ID（开发期可以使用 mock user_id=1）
+  const userId = request.user?.id || 1;
+  
+  // 设置过滤条件：只返回该用户的资源
+  let sql = `resource.user_id = ?`;
+  const params: Array<any> = [userId];
+
+  // 可选：支持其他查询参数（如 keyword）
+  const { keyword } = request.query;
+  if (keyword) {
+    sql += ' AND (resource.title LIKE ? OR resource.description LIKE ?)';
+    const keywordPattern = `%${keyword}%`;
+    params.push(keywordPattern, keywordPattern);
+  }
+
+  // 设置请求中的过滤
+  request.filter = {
+    name: 'myResources',
     sql: sql,
     params: params,
   };
