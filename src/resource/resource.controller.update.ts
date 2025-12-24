@@ -33,16 +33,18 @@ export const update = async (
     }
 
     // 2. 权限验证：仅创建者或 admin 可修改
-    // 临时测试方案：如果没有用户信息，跳过权限验证
-    // TODO: 生产环境需要恢复权限验证
+    // 注意：此处的权限验证已由 resourcePermissionGuard 中间件完成
+    // 这里保留作为双重检查（防御性编程）
     const userId = request.user?.id;
-    const isAdmin = request.user?.role === 'admin'; // 假设有 role 字段
+    const userRole = request.user?.role || 'user';
+    const isAdmin = userRole === 'admin';
     const isOwner = existingResource.user_id === userId;
 
-    if (userId && !isAdmin && !isOwner) {
-      return response.status(403).send({
+    if (!userId || (!isAdmin && !isOwner)) {
+      return response.status(403).json({
         success: false,
         message: '无权修改此资源',
+        error: 'FORBIDDEN',
       });
     }
 

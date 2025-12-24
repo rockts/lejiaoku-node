@@ -4,30 +4,49 @@ import { signToken } from './auth.service';
 
 /**
  * 用户登录
+ * POST /api/login
+ * 输入：username (或 email), password
+ * 返回：JWT token 和用户信息
  */
 export const login = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 准备数据
-  const {
-    user: { id, name, email, created_at, updated_at, avatar },
-  } = request.body;
-
-  const payload = { id, name, email };
-
   try {
-    // 签发令牌
+    // 准备数据（从 validateLoginData 中间件注入）
+    const {
+      user: { id, name, email, role, created_at, updated_at, avatar },
+    } = request.body;
+
+    // 构建 token payload（包含用户 ID、name、email、role）
+    const payload = {
+      id,
+      name,
+      email,
+      role: role || 'user', // 默认角色为 user
+    };
+
+    // 签发令牌（24小时过期）
     const token = signToken({ payload });
 
-    const user = { id, name, email, created_at, updated_at, avatar }
+    // 构建返回的用户信息（不包含密码）
+    const user = {
+      id,
+      name,
+      email,
+      role: role || 'user',
+      created_at,
+      updated_at,
+      avatar,
+    };
 
-    // 做出响应
+    // 返回响应
     response.send({
-      message: 'success',
+      success: true,
+      message: '登录成功',
       token,
-      user
+      user,
     });
   } catch (error) {
     next(error);

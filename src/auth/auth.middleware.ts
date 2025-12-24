@@ -7,6 +7,7 @@ import { possess } from './auth.service';
 
 /**
  * 验证用户登录数据
+ * 支持 username 或 email 登录
  */
 export const validateLoginData = async (
   request: Request,
@@ -16,14 +17,20 @@ export const validateLoginData = async (
   console.log('👮‍♂️ 验证用户登录数据');
 
   // 准备数据
-  const { email, password } = request.body;
+  const { username, email, password } = request.body;
 
   // 验证必填数据
-  if (!email) return next(new Error('EMAIL_IS_REQUIRED'));
   if (!password) return next(new Error('PASSWORD_IS_REQUIRED'));
+  if (!username && !email) return next(new Error('USERNAME_OR_EMAIL_IS_REQUIRED'));
 
-  // 验证邮箱
-  const user = await userService.getUserByEmail(email, { password: true });
+  // 根据 username 或 email 查找用户
+  let user = null;
+  if (username) {
+    user = await userService.getUserByName(username, { password: true });
+  } else if (email) {
+    user = await userService.getUserByEmail(email, { password: true });
+  }
+
   if (!user) return next(new Error('USER_DOES_NOT_EXIST'));
 
   // 验证用户密码
@@ -39,6 +46,7 @@ export const validateLoginData = async (
 
 /**
  * 验证用户身份
+ * 检查请求头 Authorization 中的 JWT token，验证用户身份
  */
 export const authGuard = (
   request: Request,
@@ -47,11 +55,21 @@ export const authGuard = (
 ) => {
   console.log('👮🏼‍♀️ 验证用户身份');
 
-  return request.user.id ? next() : next(new Error('UNAUTHORIZED'));
+  // 检查是否有用户信息（由 currentUser 中间件注入）
+  if (!request.user || !request.user.id) {
+    return response.status(401).json({
+      success: false,
+      message: '未授权，请先登录',
+      error: 'UNAUTHORIZED',
+    });
+  }
+
+  next();
 };
 
 /**
  * 当前用户
+ * 从请求头 Authorization 中提取并验证 JWT token，将用户信息注入 request.user
  */
 export const currentUser = (
   request: Request,
@@ -61,23 +79,35 @@ export const currentUser = (
   let user = null;
 
   try {
-    // 提取 Authorization
+    // 提取 Authorization header
     const authorization = request.header('Authorization');
 
-    // 提取 JWT 令牌
-    const token = authorization.replace('Bearer ', '');
+    if (authorization) {
+      // 提取 JWT 令牌（支持 "Bearer <token>" 格式）
+      const token = authorization.replace(/^Bearer\s+/i, '');
 
-    if (token) {
-      // 验证令牌
-      const decoded = jwt.verify(token, PUBLIC_KEY, {
-        algorithms: ['RS256'],
-      });
+      if (token) {
+        // 验证令牌
+        const decoded = jwt.verify(token, PUBLIC_KEY, {
+          algorithms: ['RS256'],
+        }) as any;
 
-      user = decoded as any;
+        // decoded 包含 payload，需要提取 user 信息
+        user = {
+          id: decoded.id || decoded.payload?.id,
+          name: decoded.name || decoded.payload?.name,
+          email: decoded.email || decoded.payload?.email,
+          role: decoded.role || decoded.payload?.role || 'user',
+        };
+      }
     }
-  } catch (error) { }
+  } catch (error) {
+    // token 无效或过期，user 保持为 null
+    // 不抛出错误，让后续的 authGuard 处理
+    console.log('Token 验证失败:', error instanceof Error ? error.message : error);
+  }
 
-  // 在请求里添加当前用户
+  // 在请求里添加当前用户（可能为 null）
   request.user = user;
 
   next();

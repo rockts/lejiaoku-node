@@ -2,7 +2,9 @@ import express from 'express';
 import * as resourceController from './resource.controller';
 import * as resourceAutoMetaController from './resource-auto-meta.controller';
 import * as updateResourceController from './resource.controller.update';
+import * as deleteResourceController from './resource.controller.delete';
 import { authGuard } from '../auth/auth.middleware';
+import { resourcePermissionGuard } from './resource.permission.middleware';
 import { filter, adminFilter, myResourcesFilter, paginate, resourceFileInterceptor, resourceWithCoverInterceptor } from './resource.middleware';
 
 const router = express.Router();
@@ -61,12 +63,11 @@ router.get(
 
 /**
  * 创建资源（支持文件上传）
- * 临时方案：暂时移除 authGuard 以便测试，生产环境应恢复
- * TODO: 恢复 authGuard 中间件以确保安全
+ * 权限：user 或 admin
  */
 router.post(
   '/resources',
-  // authGuard, // 临时注释以支持测试
+  authGuard, // 需要登录
   resourceWithCoverInterceptor, // 文件上传中间件（支持资源文件 + 封面文件同时上传）
   resourceController.store,
 );
@@ -101,8 +102,21 @@ router.patch(
  */
 router.put(
   '/resources/:id',
-  // authGuard, // TODO: 生产环境需要恢复权限验证
+  authGuard, // 需要登录
+  resourcePermissionGuard, // 权限验证：仅创建者或 admin
   updateResourceController.update,
+);
+
+/**
+ * 删除资源
+ * DELETE /api/resources/:id
+ * 权限：仅创建者或 admin 可删除
+ */
+router.delete(
+  '/resources/:id',
+  authGuard, // 需要登录
+  resourcePermissionGuard, // 权限验证：仅创建者或 admin
+  deleteResourceController.destroy,
 );
 
 /**

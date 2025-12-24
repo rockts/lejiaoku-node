@@ -5,6 +5,7 @@ import * as userService from './user.service';
 
 /**
  * 验证用户数据
+ * 支持 username 或 name 字段
  */
 export const validateUserData = async (
   request: Request,
@@ -13,21 +14,36 @@ export const validateUserData = async (
 ) => {
   console.log('👮‍♂️ 验证用户数据');
 
-  // 准备数据
-  const { name, password, email } = request.body;
+  // 准备数据（支持 username 或 name）
+  const { name, username, password, email, role } = request.body;
+  const userNameValue = username || name; // 兼容 username 和 name
 
   // 验证必填数据
-  if (!name) return next(new Error('NAME_IS_REQUIRED'));
-  if (!email) return next(new Error('EMAIL_IS_REQUIRED'));
+  if (!userNameValue) return next(new Error('USERNAME_OR_NAME_IS_REQUIRED'));
   if (!password) return next(new Error('PASSWORD_IS_REQUIRED'));
+  // email 可选，但如果有则验证
 
-  // 验证用户名
-  const userName = await userService.getUserByName(name);
-  if (userName) return next(new Error('USER_ALREADY_EXIST'));
+  // 验证用户名（如果提供了 name/username）
+  if (userNameValue) {
+    const existingUser = await userService.getUserByName(userNameValue);
+    if (existingUser) return next(new Error('USERNAME_ALREADY_EXIST'));
+  }
 
-  // 验证邮箱
-  const userEmail = await userService.getUserByEmail(email);
-  if (userEmail) return next(new Error('EMAIL_ALREADY_EXIST'));
+  // 验证邮箱（如果提供了 email）
+  if (email) {
+    const userEmail = await userService.getUserByEmail(email);
+    if (userEmail) return next(new Error('EMAIL_ALREADY_EXIST'));
+  }
+
+  // 验证角色（如果提供）
+  if (role && !['user', 'admin'].includes(role)) {
+    return next(new Error('INVALID_ROLE'));
+  }
+
+  // 将 username 映射到 name（如果使用的是 username）
+  if (username && !name) {
+    request.body.name = username;
+  }
 
   // 下一步
   next();

@@ -289,9 +289,11 @@ export const store = async (
     // 如果前端发送了 version 但没有 textbook，使用 version
     const textbookValue = textbook || version;
 
-    // 临时测试方案：如果没有用户ID，使用默认测试用户ID 1
-    // TODO: 在生产环境中应移除此逻辑，确保必须通过 authGuard
-    const userId = request.user?.id || 1;
+    // 获取用户ID（必须通过 authGuard 验证）
+    const userId = request.user?.id;
+    if (!userId) {
+      return next(new Error('UNAUTHORIZED'));
+    }
 
     // 验证必填字段
     if (!title) return next(new Error('TITLE_IS_REQUIRED'));

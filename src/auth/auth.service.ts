@@ -13,8 +13,11 @@ export const signToken = (options: SignTokenOptions) => {
   // 准备选项
   const { payload } = options;
 
-  // 签发 JWT
-  const token = jwt.sign(payload, PRIVATE_KEY, { algorithm: 'RS256' });
+  // 签发 JWT，设置过期时间为 24 小时
+  const token = jwt.sign(payload, PRIVATE_KEY, {
+    algorithm: 'RS256',
+    expiresIn: '24h', // 24 小时过期
+  });
 
   // 提供 JWT
   return token;
