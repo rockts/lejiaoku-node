@@ -13,6 +13,7 @@ import {
 } from './resource.service';
 import { APP_PORT } from '../app/app.config';
 import { getResourceTextbooks, processTextbookUpload } from '../textbook/textbook.controller'; // 获取资源关联的教材目录
+import { enrichResourceWithCatalogInfo, enrichResourceListWithCatalogInfo } from './resource-helper.service';
 import { processResourceAsync } from './resource-parser-worker';
 import { isCategoryAllowed, isFileFormatAllowed, isVideoResource } from './resource.constants';
 
@@ -79,7 +80,9 @@ export const index = async (
                 }
                 return resource;
             });
-            response.send(resourcesWithFullUrl);
+            // 为资源列表添加 catalog_info
+            const resourcesWithCatalogInfo = await enrichResourceListWithCatalogInfo(resourcesWithFullUrl);
+            response.send(resourcesWithCatalogInfo);
         } else {
             response.send(resources);
         }
@@ -124,7 +127,9 @@ export const adminIndex = async (
                 }
                 return resource;
             });
-            response.send(resourcesWithFullUrl);
+            // 为资源列表添加 catalog_info
+            const resourcesWithCatalogInfo = await enrichResourceListWithCatalogInfo(resourcesWithFullUrl);
+            response.send(resourcesWithCatalogInfo);
         } else {
             response.send(resources);
         }
@@ -169,7 +174,9 @@ export const myResources = async (
                 }
                 return resource;
             });
-            response.send(resourcesWithFullUrl);
+            // 为资源列表添加 catalog_info
+            const resourcesWithCatalogInfo = await enrichResourceListWithCatalogInfo(resourcesWithFullUrl);
+            response.send(resourcesWithCatalogInfo);
         } else {
             response.send(resources);
         }
@@ -243,31 +250,12 @@ export const show = async (
         // 附加教材信息（如果已绑定）
         // 扩展字段：textbooks 和 catalog_info 仅在资源关联教材时存在
         // 这些字段未来可能增强，但保证向后兼容（不会删除现有字段）
-        try {
-            const textbooks = await getResourceTextbooks(resource.id);
-            if (textbooks && textbooks.length > 0) {
-                resource.textbooks = textbooks;
-                // 如果有关联的教材目录，返回简化的 catalog_info（使用第一个关联的目录）
-                const firstTextbook = textbooks[0];
-                if (firstTextbook) {
-                    resource.catalog_info = {
-                        education_level: firstTextbook.education_level,
-                        grade: firstTextbook.grade,
-                        subject: firstTextbook.subject,
-                        textbook_version: firstTextbook.textbook_version,
-                        volume: firstTextbook.volume,
-                    };
-                }
-            }
-        } catch (textbookError) {
-            // 获取教材信息失败不影响主流程，继续返回资源信息
-            console.error('获取教材信息失败:', textbookError);
-        }
+        const resourceWithCatalogInfo = await enrichResourceWithCatalogInfo(resource);
 
         // chapter_info 原样返回（已经是 resource 的一部分）
         // 所有字段已按标准接口规范返回，详见：docs/api/resource-detail-api-standard.md
 
-        response.send(resource);
+        response.send(resourceWithCatalogInfo);
     } catch (error) {
         next(error);
     }
