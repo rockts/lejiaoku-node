@@ -1,6 +1,7 @@
 import express from 'express';
 import * as resourceController from './resource.controller';
 import * as resourceAutoMetaController from './resource-auto-meta.controller';
+import * as updateResourceController from './resource.controller.update';
 import { authGuard } from '../auth/auth.middleware';
 import { filter, adminFilter, myResourcesFilter, paginate, resourceFileInterceptor, resourceWithCoverInterceptor } from './resource.middleware';
 
@@ -91,6 +92,17 @@ router.patch(
   '/admin/resources/:id/status',
   // authGuard, // TODO: 生产环境需要添加权限验证
   resourceController.updateStatus,
+);
+
+/**
+ * 更新资源（编辑资源）
+ * PUT /api/resources/:id
+ * 权限：仅创建者或 admin 可修改
+ */
+router.put(
+  '/resources/:id',
+  // authGuard, // TODO: 生产环境需要恢复权限验证
+  updateResourceController.update,
 );
 
 /**

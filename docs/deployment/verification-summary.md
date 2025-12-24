@@ -11,27 +11,27 @@
 
 ### ✅ 1. Resource 接口完整性
 
-| 接口 | 状态 | 说明 |
-|------|------|------|
-| `GET /api/resources` | ✅ 正常 | 返回 approved 资源列表，包含 catalog_info 和 auto_meta_result |
-| `GET /api/resources/:id` | ✅ 正常 | 返回单条资源详情，字段完整 |
-| `POST /api/resources` | ✅ 正常 | 创建资源（测试用，生产需恢复 authGuard） |
+| 接口                     | 状态   | 说明                                                          |
+| ------------------------ | ------ | ------------------------------------------------------------- |
+| `GET /api/resources`     | ✅ 正常 | 返回 approved 资源列表，包含 catalog_info 和 auto_meta_result |
+| `GET /api/resources/:id` | ✅ 正常 | 返回单条资源详情，字段完整                                    |
+| `POST /api/resources`    | ✅ 正常 | 创建资源（测试用，生产需恢复 authGuard）                      |
 
 ### ✅ 2. 批量绑定功能
 
-| 功能 | 状态 | 说明 |
-|------|------|------|
-| 批量绑定脚本 | ✅ 正常 | 遍历所有 approved 资源并绑定教材目录 |
-| 幂等性保证 | ✅ 正常 | 重复执行不产生重复绑定记录 |
-| auto_meta_result 保留 | ✅ 正常 | 脚本只读取，不修改 |
+| 功能                  | 状态   | 说明                                 |
+| --------------------- | ------ | ------------------------------------ |
+| 批量绑定脚本          | ✅ 正常 | 遍历所有 approved 资源并绑定教材目录 |
+| 幂等性保证            | ✅ 正常 | 重复执行不产生重复绑定记录           |
+| auto_meta_result 保留 | ✅ 正常 | 脚本只读取，不修改                   |
 
 ### ✅ 3. catalog_info 返回
 
-| 接口 | catalog_info | 说明 |
-|------|-------------|------|
-| `GET /api/resources` | ✅ 支持 | 列表接口返回 catalog_info（资源有绑定时） |
-| `GET /api/resources/:id` | ✅ 支持 | 详情接口返回 catalog_info（资源有绑定时） |
-| 字段标准化 | ✅ 通过 | education_level, grade, subject, textbook_version, volume |
+| 接口                     | catalog_info | 说明                                                      |
+| ------------------------ | ------------ | --------------------------------------------------------- |
+| `GET /api/resources`     | ✅ 支持       | 列表接口返回 catalog_info（资源有绑定时）                 |
+| `GET /api/resources/:id` | ✅ 支持       | 详情接口返回 catalog_info（资源有绑定时）                 |
+| 字段标准化               | ✅ 通过       | education_level, grade, subject, textbook_version, volume |
 
 ---
 

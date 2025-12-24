@@ -10,12 +10,14 @@ import {
     getResourceByIdForAdmin,
     updateResourceStatus,
     updateResourceAutoParse,
+    updateResource,
 } from './resource.service';
 import { APP_PORT } from '../app/app.config';
 import { getResourceTextbooks, processTextbookUpload } from '../textbook/textbook.controller'; // 获取资源关联的教材目录
 import { enrichResourceWithCatalogInfo, enrichResourceListWithCatalogInfo } from './resource-helper.service';
 import { processResourceAsync } from './resource-parser-worker';
 import { isCategoryAllowed, isFileFormatAllowed, isVideoResource } from './resource.constants';
+import * as updateResourceController from './resource.controller.update';
 
 /**
  * 将相对路径转换为完整URL或保持相对路径

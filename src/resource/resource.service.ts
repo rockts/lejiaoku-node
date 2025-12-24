@@ -226,3 +226,50 @@ export const updateResourceAutoParse = async (
     resourceId,
   ]);
 };
+
+/**
+ * 更新资源信息
+ * @param resourceId 资源ID
+ * @param updates 要更新的字段（不包括 id, status, created_at, auto_meta_status, auto_meta_result）
+ */
+export const updateResource = async (
+  resourceId: number,
+  updates: Partial<ResourceModel>,
+) => {
+  // 构建更新字段（排除不允许直接更新的字段）
+  const allowedFields = [
+    'title',
+    'category',
+    'description',
+    'subject',
+    'grade',
+    'textbook',
+    'chapter_info',
+    'cover_url',
+    'file_url',
+    'file_format',
+  ];
+
+  const updateFields: { [key: string]: any } = {};
+  allowedFields.forEach(field => {
+    if (updates.hasOwnProperty(field) && updates[field as keyof ResourceModel] !== undefined) {
+      updateFields[field] = updates[field as keyof ResourceModel];
+    }
+  });
+
+  // 如果没有要更新的字段，直接返回
+  if (Object.keys(updateFields).length === 0) {
+    return;
+  }
+
+  // 添加更新时间
+  updateFields.updated_at = new Date();
+
+  const statement = `
+    UPDATE resource
+    SET ?
+    WHERE id = ?
+  `;
+
+  await connection.promise().query(statement, [updateFields, resourceId]);
+};

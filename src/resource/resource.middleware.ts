@@ -285,6 +285,7 @@ export const resourceWithCoverInterceptor = (
 
 /**
  * 过滤列表（普通用户，只显示已审核的资源）
+ * 支持搜索参数：grade, subject, textbook_version, volume, chapter_keyword
  */
 export const filter = async (
   request: Request,
@@ -292,10 +293,10 @@ export const filter = async (
   next: NextFunction,
 ) => {
   // 解构查询参数
-  const { keyword, category, subject, grade, textbook } = request.query;
+  const { keyword, category, subject, grade, textbook, textbook_version, volume, chapter_keyword } = request.query;
 
   // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
-  let sql = 'resource.status = "approved" AND resource.file_format != "视频" AND resource.file_format != "VIDEO" AND resource.category != "视频"';
+  let sql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
   const params: Array<any> = [];
 
   // 按关键词过滤（搜索标题和描述）
@@ -317,16 +318,41 @@ export const filter = async (
     params.push(subject);
   }
 
-  // 按年级过滤
+  // 按年级过滤（支持字符串格式，如"二年级"）
   if (grade) {
-    sql += ' AND resource.grade = ?';
-    params.push(parseInt(grade as string, 10));
+    sql += ' AND resource.grade LIKE ?';
+    const gradePattern = `%${grade}%`;
+    params.push(gradePattern);
   }
 
-  // 按教材版本过滤
-  if (textbook) {
+  // 按教材版本过滤（兼容 textbook 和 textbook_version）
+  const version = textbook_version || textbook;
+  if (version) {
     sql += ' AND resource.textbook = ?';
-    params.push(textbook);
+    params.push(version);
+  }
+
+  // 按册次过滤（volume）
+  if (volume) {
+    sql += ' AND resource.grade LIKE ?';
+    const volumePattern = `%${volume}%`;
+    params.push(volumePattern);
+  }
+
+  // 按章节关键词过滤（搜索 chapter_info 或 auto_meta_result.structure.title）
+  // 注意：由于 auto_meta_result 是 JSON 字段，需要使用 JSON 函数进行搜索
+  if (chapter_keyword) {
+    const chapterPattern = `%${chapter_keyword}%`;
+    // 搜索 chapter_info 字段
+    sql += ' AND (resource.chapter_info LIKE ?';
+    params.push(chapterPattern);
+    // 搜索 auto_meta_result JSON 字段中的 structure（使用 JSON_SEARCH 更可靠）
+    sql += ' OR JSON_SEARCH(resource.auto_meta_result, "one", ?, NULL, "$.structure[*].title") IS NOT NULL';
+    params.push(chapterPattern);
+    sql += ' OR JSON_SEARCH(resource.auto_meta_result, "one", ?, NULL, "$.structure[*].unit") IS NOT NULL';
+    params.push(chapterPattern);
+    sql += ' OR JSON_SEARCH(resource.auto_meta_result, "one", ?, NULL, "$.structure[*]") IS NOT NULL)';
+    params.push(chapterPattern);
   }
 
   // 设置请求中的过滤
