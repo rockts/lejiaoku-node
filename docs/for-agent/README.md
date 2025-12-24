@@ -5,4 +5,4 @@
 1. blueprint-for-agent.md
 2. 本仓库对应的 rules 文件
 
-不允许跳过蓝图直接写代码。
+不允许跳过蓝图直接写代码。f
