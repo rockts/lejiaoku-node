@@ -41,7 +41,7 @@ export const destroy = async (
 
     // 2. 权限验证（已在 resourcePermissionGuard 中完成，这里保留作为双重检查）
     const userId = request.user?.id;
-    const userRole = request.user?.role || 'user';
+    const userRole = (request.user as any)?.role || 'user';
     const isAdmin = userRole === 'admin';
     const isOwner = existingResource.user_id === userId;
 
@@ -67,7 +67,7 @@ export const destroy = async (
       message: '资源删除成功',
       resource_id: resourceId,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('删除资源失败:', error);
     next(error);
   }

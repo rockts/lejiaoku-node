@@ -32,7 +32,7 @@ export const resourcePermissionGuard = async (
     }
 
     const userId = request.user.id;
-    const userRole = request.user.role || 'user';
+    const userRole = (request.user as any).role || 'user';
     const { id } = request.params;
     const resourceId = parseInt(id, 10);
 
@@ -48,8 +48,8 @@ export const resourcePermissionGuard = async (
     let resource;
     try {
       resource = await getResourceByIdForAdmin(resourceId);
-    } catch (error: any) {
-      if (error.message === 'NOT_FOUND') {
+    } catch (error) {
+      if ((error as any).message === 'NOT_FOUND') {
         return response.status(404).json({
           success: false,
           message: '资源不存在',

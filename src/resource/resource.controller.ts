@@ -23,7 +23,7 @@ import * as updateResourceController from './resource.controller.update';
  * 将相对路径转换为完整URL或保持相对路径
  * 默认返回相对路径（前端通过代理访问），可通过环境变量控制
  */
-const getFullUrl = (request: Request, path: string): string => {
+export const getFullUrl = (request: Request, path: string): string => {
     if (!path) return path;
     // 如果已经是完整URL，直接返回
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -292,7 +292,7 @@ export const store = async (
     // 获取用户ID（必须通过 authGuard 验证）
     const userId = request.user?.id;
     if (!userId) {
-      return next(new Error('UNAUTHORIZED'));
+        return next(new Error('UNAUTHORIZED'));
     }
 
     // 验证必填字段

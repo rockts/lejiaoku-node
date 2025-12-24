@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getResourceByIdForAdmin, updateResource } from './resource.service';
 import { enrichResourceWithCatalogInfo } from './resource-helper.service';
-import { getFullUrl } from '../app/app.middleware';
+import { getFullUrl } from './resource.controller';
 import { bindResourceToCatalogByAutoMeta } from '../textbook/textbook.service';
 
 /**
@@ -36,7 +36,7 @@ export const update = async (
     // 注意：此处的权限验证已由 resourcePermissionGuard 中间件完成
     // 这里保留作为双重检查（防御性编程）
     const userId = request.user?.id;
-    const userRole = request.user?.role || 'user';
+    const userRole = (request.user as any)?.role || 'user';
     const isAdmin = userRole === 'admin';
     const isOwner = existingResource.user_id === userId;
 
@@ -102,8 +102,8 @@ export const update = async (
 
     // 9. 返回更新后的资源
     response.send(resourceWithCatalogInfo);
-  } catch (error: any) {
-    if (error.message === 'NOT_FOUND') {
+  } catch (error) {
+    if ((error as any).message === 'NOT_FOUND') {
       return next(new Error('RESOURCE_NOT_FOUND'));
     }
     console.error('更新资源失败:', error);
