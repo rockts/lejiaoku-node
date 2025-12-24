@@ -75,48 +75,68 @@ export const validateUpdateUserData = async (
   response: Response,
   next: NextFunction,
 ) => {
+  console.log('👮‍♂️ 验证更新用户数据', request.url, request.method);
+  console.log('📦 请求体:', JSON.stringify(request.body, null, 2));
+  
   // 准备数据
   const { validate, update } = request.body;
 
   // 当前用户
   const { id: userId } = request.user;
 
+  // 如果没有 update 字段，直接返回错误
+  if (!update || typeof update !== 'object') {
+    return next(new Error('UPDATE_DATA_REQUIRED'));
+  }
+
   try {
-    // 检查用户是否提供了当前密码
-    if (!_.has(validate, 'password')) {
-      return next(new Error('PASSWORD_IS_REQUIRED'));
+    // 调取用户数据（如果需要验证密码或更新密码时才需要 password）
+    let user = null;
+    const needPassword = update && update.password;
+    
+    if (needPassword) {
+      // 如果要修改密码，必须提供当前密码进行验证
+      if (!validate || !validate.password) {
+        return next(new Error('PASSWORD_IS_REQUIRED'));
+      }
+
+      // 获取用户数据（包含密码）
+      user = await userService.getUserById(userId, { password: true });
+
+      // 验证用户密码是否匹配
+      const matched = await bcrypt.compare(validate.password, user.password);
+
+      if (!matched) {
+        return next(new Error('PASSWORD_DOES_NOT_MATCH'));
+      }
     }
 
-    // 调取用户数据
-    const user = await userService.getUserById(userId, { password: true });
+    // 检查用户名是否被占用（排除当前用户）
+    if (update && update.name) {
+      const existingUser = await userService.getUserByName(update.name);
 
-    // 验证用户密码是否匹配
-    const matched = await bcrypt.compare(validate.password, user.password);
-
-    if (!matched) {
-      return next(new Error('PASSWORD_DOES_NOT_MATCH'));
-    }
-
-    // 检查用户名是否被占用
-    if (update.name) {
-      const user = await userService.getUserByName(update.name);
-
-      if (user) {
+      if (existingUser && existingUser.id !== userId) {
         return next(new Error('USER_ALREADY_EXIST'));
       }
     }
 
-    // 处理用户邮箱是否占用
-    if (update.email) {
-      const user = await userService.getUserByEmail(update.email);
+    // 处理用户邮箱是否占用（排除当前用户）
+    if (update && update.email) {
+      const existingUser = await userService.getUserByEmail(update.email);
 
-      if (user) {
+      if (existingUser && existingUser.id !== userId) {
         return next(new Error('EMAIL_ALREADY_EXIST'));
       }
     }
 
-    // 处理用户更新密码
-    if (update.password) {
+    // 处理用户更新密码（仅在修改密码时需要）
+    if (update && update.password) {
+      // 如果之前没有获取用户数据，现在获取
+      if (!user) {
+        user = await userService.getUserById(userId, { password: true });
+      }
+
+      // 检查新密码是否与当前密码相同
       const matched = await bcrypt.compare(update.password, user.password);
 
       if (matched) {

@@ -84,16 +84,38 @@ export const update = async (
   response: Response,
   next: NextFunction,
 ) => {
+  console.log('📝 更新用户信息');
+  
   // 准备数据
   const { id } = request.user;
-  const userData = _.pick(request.body.update, ['name', 'password', 'email']);
+  const update = request.body.update || {};
+  const userData = _.pick(update, ['name', 'password', 'email']);
+  
+  // 如果没有要更新的字段，返回错误
+  if (Object.keys(userData).length === 0) {
+    return next(new Error('NO_UPDATE_FIELDS'));
+  }
+  
+  console.log('👤 用户ID:', id);
+  console.log('📋 更新数据:', userData);
 
   // 更新用户
   try {
-    const data = await updateUser(id, userData);
+    await updateUser(id, userData);
 
-    // 做出响应
-    response.send(data);
+    // 获取更新后的用户信息
+    const updatedUser = await getUserById(id);
+
+    if (!updatedUser) {
+      return next(new Error('USER_NOT_FOUND'));
+    }
+
+    // 做出响应（返回更新后的用户信息）
+    response.send({
+      success: true,
+      message: '更新成功',
+      user: updatedUser,
+    });
   } catch (error) {
     next(error);
   }

@@ -237,9 +237,18 @@ export const defaultErrorHandler = (
       statusCode = 404;
       message = '教材目录不存在';
       break;
+    case 'UPDATE_DATA_REQUIRED':
+      statusCode = 400;
+      message = '请提供要更新的数据';
+      break;
+    case 'NO_UPDATE_FIELDS':
+      statusCode = 400;
+      message = '没有要更新的字段';
+      break;
     default:
       statusCode = 500;
       message = '服务暂时出了点问题 ~~ 🌴';
+      console.log('❌ 未处理的错误:', error.message, error);
       break;
   }
 

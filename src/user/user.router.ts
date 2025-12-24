@@ -35,6 +35,24 @@ router.patch(
 );
 
 /**
+ * 更新用户（兼容前端 /user/profile 路径）
+ * 支持 PATCH 和 PUT 方法
+ */
+router.patch(
+  '/user/profile',
+  authGuard,
+  validateUpdateUserData,
+  userController.update,
+);
+
+router.put(
+  '/user/profile',
+  authGuard,
+  validateUpdateUserData,
+  userController.update,
+);
+
+/**
  * 删除用户
  */
 router.delete('/users/:userId', authGuard, userController.destroy);
