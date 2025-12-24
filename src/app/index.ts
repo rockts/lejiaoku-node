@@ -15,7 +15,6 @@ import avatarRouter from '../avatar/avatar.router';
 import likeRouter from '../like/like.router';
 import saveRouter from '../save/save.router';
 import appRouter from './app.router';
-import classificationRouter from "../classification/classification.router";
 import resourceRouter from '../resource/resource.router';
 import textbookRouter from '../textbook/textbook.router';
 import { defaultErrorHandler } from './app.middleware';
@@ -66,9 +65,8 @@ app.use(
   avatarRouter,
   commentRouter,
   likeRouter,
-  saveRouter,
+      saveRouter,
       appRouter,
-      classificationRouter,
       resourceRouter, // /resources - 资源管理（唯一权威模型）
       textbookRouter // /textbook-catalog, /resources/:id/bind-textbook
     );
@@ -86,6 +84,19 @@ app.use(
      * Textbook API 路由
      */
     app.use('/api', textbookRouter);
+
+/**
+ * Classification 兼容路由（静态返回，用于向后兼容）
+ * @deprecated 请使用 Resource.category 字段，此接口仅用于向后兼容
+ * 前端应直接从资源列表获取分类选项，不再依赖此接口
+ */
+app.get('/classifications', (req, res) => {
+  res.json(['教材', '教案', '课件', '习题', '其他']);
+});
+
+app.get('/classifications/category', (req, res) => {
+  res.json(['教材', '教案', '课件', '习题', '其他']);
+});
 
 /**
  * 默认异常处理器
