@@ -77,9 +77,29 @@ export const defaultErrorHandler = (
       statusCode = 409;
       message = '用户名已被占用';
       break;
+    case 'USERNAME_ALREADY_EXIST':
+      statusCode = 409;
+      message = '用户名已被占用';
+      break;
     case 'EMAIL_ALREADY_EXIST':
       statusCode = 409;
       message = '邮箱已被占用';
+      break;
+    case 'USERNAME_OR_NAME_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供用户名';
+      break;
+    case 'USERNAME_OR_EMAIL_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供用户名或邮箱';
+      break;
+    case 'INVALID_ROLE':
+      statusCode = 400;
+      message = '无效的角色，只能是 user 或 admin';
+      break;
+    case 'FORBIDDEN':
+      statusCode = 403;
+      message = '无权执行此操作';
       break;
     case 'USER_DOES_NOT_EXIST':
       statusCode = 400;
@@ -87,11 +107,19 @@ export const defaultErrorHandler = (
       break;
     case 'PASSWORD_DOES_NOT_MATCH':
       statusCode = 400;
-      message = '密码不对';
+      message = '用户名或密码错误';
       break;
     case 'UNAUTHORIZED':
       statusCode = 401;
-      message = '请先登录';
+      message = '未授权，请先登录';
+      break;
+    case 'RESOURCE_NOT_FOUND':
+      statusCode = 404;
+      message = '资源不存在';
+      break;
+    case 'INVALID_RESOURCE_ID':
+      statusCode = 400;
+      message = '无效的资源ID';
       break;
     case 'USER_DOES_NOT_OWN_RESOURCE':
       statusCode = 403;
