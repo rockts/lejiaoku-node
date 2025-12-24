@@ -365,15 +365,10 @@ export const bindResourceToCatalogByAutoMeta = async (resourceId: number): Promi
     }
     
     // 7. 写入 resource_textbook_map（幂等）
-    // 使用 ON DUPLICATE KEY UPDATE 确保幂等性
-    // 如果表有 bind_time 字段则更新 bind_time，否则更新 updated_at
-    // 由于用户要求 bind_time = now()，这里尝试更新 bind_time，如果字段不存在会失败，需要根据实际表结构调整
+    // 使用 INSERT IGNORE 确保幂等性（假设表有唯一约束 resource_id + textbook_catalog_id）
     const statement = `
-      INSERT INTO resource_textbook_map (resource_id, textbook_catalog_id, source, created_at)
+      INSERT IGNORE INTO resource_textbook_map (resource_id, textbook_catalog_id, source, created_at)
       VALUES (?, ?, 'ai', CURRENT_TIMESTAMP)
-      ON DUPLICATE KEY UPDATE 
-        source = VALUES(source),
-        updated_at = CURRENT_TIMESTAMP
     `;
     
     await connection.promise().query(statement, [resourceId, catalogId]);
