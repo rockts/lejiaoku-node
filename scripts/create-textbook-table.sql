@@ -33,3 +33,4 @@ CREATE TABLE IF NOT EXISTS textbook (
   INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教材表（统一抽象结构）';
 
+

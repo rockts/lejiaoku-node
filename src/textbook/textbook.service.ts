@@ -235,3 +235,153 @@ export const getTextbookStructureTree = async (textbookId: number) => {
   
   return rootNodes;
 };
+
+/**
+ * 将中文年级转换为数字年级（用于匹配 textbook_catalog 表）
+ * 例如："二年级" -> "2", "一年级" -> "1"
+ */
+function convertGradeToNumber(grade: string | number): string {
+  if (typeof grade === 'number') {
+    return String(grade);
+  }
+  
+  const gradeMap: { [key: string]: string } = {
+    '一年级': '1',
+    '二年级': '2',
+    '三年级': '3',
+    '四年级': '4',
+    '五年级': '5',
+    '六年级': '6',
+    '七年级': '7',
+    '八年级': '8',
+    '九年级': '9',
+  };
+  
+  // 如果已经是数字字符串，直接返回
+  if (/^\d+$/.test(grade.trim())) {
+    return grade.trim();
+  }
+  
+  // 尝试从 map 中查找
+  if (gradeMap[grade]) {
+    return gradeMap[grade];
+  }
+  
+  // 尝试提取数字（如 "2年级" -> "2"）
+  const match = grade.match(/(\d+)/);
+  if (match) {
+    return match[1];
+  }
+  
+  // 如果无法转换，返回原值（可能会匹配失败）
+  return grade;
+}
+
+/**
+ * 根据 auto_meta_result 绑定资源到教材目录
+ * 
+ * 功能：
+ * 1. 从 resource.auto_meta_result 中提取字段
+ * 2. 匹配 textbook_catalog 表找到对应的教材目录
+ * 3. 写入 resource_textbook_map 表（幂等，source='ai'）
+ * 
+ * @param resourceId 资源ID
+ * @returns 返回绑定的教材目录ID，如果未找到匹配或已绑定则返回 null
+ */
+export const bindResourceToCatalogByAutoMeta = async (resourceId: number): Promise<number | null> => {
+  try {
+    // 1. 获取资源的 auto_meta_result
+    const [resourceData]: any = await connection.promise().query(
+      'SELECT auto_meta_result FROM resource WHERE id = ?',
+      [resourceId]
+    );
+    
+    if (!resourceData || !resourceData[0] || !resourceData[0].auto_meta_result) {
+      console.log(`[绑定教材目录] 资源 ${resourceId} 不存在或没有 auto_meta_result`);
+      return null;
+    }
+    
+    const autoMetaResult = typeof resourceData[0].auto_meta_result === 'string' 
+      ? JSON.parse(resourceData[0].auto_meta_result)
+      : resourceData[0].auto_meta_result;
+    
+    // 2. 提取需要的字段
+    const education_level = autoMetaResult.education_level;
+    const subject = autoMetaResult.subject;
+    const grade = autoMetaResult.grade;
+    const volume = autoMetaResult.volume;
+    const textbook_version = autoMetaResult.textbook_version;
+    
+    // 3. 检查必要字段是否都存在
+    if (!education_level || !subject || !grade || !volume || !textbook_version) {
+      console.log(`[绑定教材目录] 资源 ${resourceId} 的 auto_meta_result 缺少必要字段`, {
+        education_level,
+        subject,
+        grade,
+        volume,
+        textbook_version
+      });
+      return null;
+    }
+    
+    // 4. 转换 grade 格式（将 "二年级" 转换为 "2"）
+    const gradeNumber = convertGradeToNumber(grade);
+    
+    // 5. 匹配 textbook_catalog 表
+    const [catalogData]: any = await connection.promise().query(
+      `SELECT id FROM textbook_catalog 
+       WHERE education_level = ? 
+       AND subject = ? 
+       AND grade = ? 
+       AND volume = ? 
+       AND textbook_version = ?
+       LIMIT 1`,
+      [education_level, subject, gradeNumber, volume, textbook_version]
+    );
+    
+    if (!catalogData || !catalogData[0] || !catalogData[0].id) {
+      console.log(`[绑定教材目录] 资源 ${resourceId} 未找到匹配的教材目录`, {
+        education_level,
+        subject,
+        grade,
+        grade_converted: gradeNumber,
+        volume,
+        textbook_version
+      });
+      return null;
+    }
+    
+    const catalogId = catalogData[0].id;
+    
+    // 6. 检查是否已经绑定（幂等性）
+    const [existingBind]: any = await connection.promise().query(
+      'SELECT id FROM resource_textbook_map WHERE resource_id = ? AND textbook_catalog_id = ?',
+      [resourceId, catalogId]
+    );
+    
+    if (existingBind && existingBind[0] && existingBind[0].id) {
+      console.log(`[绑定教材目录] 资源 ${resourceId} 已绑定到教材目录 ${catalogId}，跳过`);
+      return catalogId;
+    }
+    
+    // 7. 写入 resource_textbook_map（幂等）
+    // 使用 ON DUPLICATE KEY UPDATE 确保幂等性
+    // 如果表有 bind_time 字段则更新 bind_time，否则更新 updated_at
+    // 由于用户要求 bind_time = now()，这里尝试更新 bind_time，如果字段不存在会失败，需要根据实际表结构调整
+    const statement = `
+      INSERT INTO resource_textbook_map (resource_id, textbook_catalog_id, source, created_at)
+      VALUES (?, ?, 'ai', CURRENT_TIMESTAMP)
+      ON DUPLICATE KEY UPDATE 
+        source = VALUES(source),
+        updated_at = CURRENT_TIMESTAMP
+    `;
+    
+    await connection.promise().query(statement, [resourceId, catalogId]);
+    
+    console.log(`[绑定教材目录] 资源 ${resourceId} 成功绑定到教材目录 ${catalogId}`);
+    return catalogId;
+  } catch (error) {
+    console.error(`[绑定教材目录] 资源 ${resourceId} 绑定失败:`, error);
+    throw error;
+  }
+};

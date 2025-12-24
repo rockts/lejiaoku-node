@@ -100,6 +100,16 @@ export const getResourceTotalCount = async (options: {
 
 /**
  * 根据 ID 获取资源（仅已审核）
+ * 
+ * 返回字段说明（已冻结，6个月内不破坏性变更）：
+ * - 必须字段：id, title, category, file_url, file_format
+ * - 可选字段：description, subject, grade, textbook, chapter_info, cover_url
+ * - AI字段：auto_meta_status, auto_meta_result（只读）
+ * - 系统字段：download_count, created_at, updated_at
+ * 
+ * 注意：status 字段不返回（因为只查询已审核资源）
+ * 
+ * 详细接口规范请参考：docs/api/resource-detail-api-standard.md
  */
 export const getResourceById = async (resourceId: number) => {
   const statement = `

@@ -6,6 +6,7 @@ import {
   getTextbookByResourceId,
   createTextbookStructures,
   getTextbookStructureTree,
+  bindResourceToCatalogByAutoMeta,
 } from './textbook.service';
 import {
   extractTextbookInfo,
@@ -204,6 +205,49 @@ export const bindResourceToTextbook = async (
     
     await connection.promise().query(statement, [id, textbook_catalog_id]);
     response.send({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 根据 auto_meta_result 自动绑定资源到教材目录
+ * POST /api/resources/:id/bind-catalog-from-auto-meta
+ */
+export const bindResourceToCatalogFromAutoMeta = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = request.params;
+    const resourceId = parseInt(id, 10);
+    
+    // 验证资源是否存在
+    const resourceCheck = await connection.promise().query(
+      'SELECT id FROM resource WHERE id = ?',
+      [resourceId]
+    );
+    if (!(resourceCheck[0] as any[]).length) {
+      return next(new Error('RESOURCE_NOT_FOUND'));
+    }
+    
+    // 执行绑定
+    const catalogId = await bindResourceToCatalogByAutoMeta(resourceId);
+    
+    if (catalogId === null) {
+      return response.status(400).send({
+        success: false,
+        message: '无法绑定：资源缺少 auto_meta_result 或未找到匹配的教材目录',
+      });
+    }
+    
+    response.send({
+      success: true,
+      message: '绑定成功',
+      resource_id: resourceId,
+      textbook_catalog_id: catalogId,
+    });
   } catch (error) {
     next(error);
   }

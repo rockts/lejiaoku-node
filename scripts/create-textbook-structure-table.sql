@@ -32,3 +32,4 @@ CREATE TABLE IF NOT EXISTS textbook_structure (
   INDEX idx_order_index (order_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教材章节结构表（统一层级结构）';
 
+

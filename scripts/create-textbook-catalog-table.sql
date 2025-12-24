@@ -14,3 +14,4 @@ CREATE TABLE IF NOT EXISTS textbook_catalog (
   INDEX idx_subject (subject)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教材目录骨架表';
 
+

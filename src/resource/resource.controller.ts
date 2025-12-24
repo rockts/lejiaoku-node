@@ -181,6 +181,45 @@ export const myResources = async (
 /**
  * 单个资源详情
  */
+/**
+ * 获取资源详情
+ * 
+ * @api {GET} /api/resources/:id 获取资源详情
+ * @apiVersion 1.0.0
+ * @apiName GetResourceDetail
+ * @apiGroup Resource
+ * 
+ * @apiDescription 获取单个资源的详细信息。此接口已冻结，6个月内不破坏性变更。
+ * 详细字段说明请参考：docs/api/resource-detail-api-standard.md
+ * 
+ * @apiParam {Number} id 资源ID
+ * 
+ * @apiSuccess {Number} id 资源ID（必须）
+ * @apiSuccess {String} title 资源标题（必须）
+ * @apiSuccess {String} category 资源分类（必须）
+ * @apiSuccess {String} file_url 资源文件URL（必须，已转换为完整URL）
+ * @apiSuccess {String} file_format 文件格式（必须）
+ * @apiSuccess {String} [description] 资源描述（可选）
+ * @apiSuccess {String} [subject] 学科（可选）
+ * @apiSuccess {String|Number} [grade] 年级（可选）
+ * @apiSuccess {String} [textbook] 教材版本（可选）
+ * @apiSuccess {String} [chapter_info] 章节信息（可选）
+ * @apiSuccess {String} [cover_url] 封面URL（可选，已转换为完整URL）
+ * @apiSuccess {Number} download_count 下载次数
+ * @apiSuccess {String} auto_meta_status AI识别状态（pending/done/failed）
+ * @apiSuccess {Object} [auto_meta_result] AI识别结果（只读，结构可能增强但不破坏兼容）
+ * @apiSuccess {Array} [textbooks] 关联的教材信息（仅当资源已关联教材时存在）
+ * @apiSuccess {Object} [catalog_info] 教材目录信息（仅当资源已关联教材时存在）
+ * @apiSuccess {String} created_at 创建时间
+ * @apiSuccess {String} updated_at 更新时间
+ * 
+ * @apiNote 注意：
+ * - status 字段不在此接口返回（仅返回已审核资源）
+ * - file_url 和 cover_url 会自动转换为完整URL
+ * - auto_meta_result 结构可能增强，前端应忽略未知字段
+ * 
+ * @apiError NOT_FOUND 资源不存在或未审核
+ */
 export const show = async (
     request: Request,
     response: Response,
@@ -189,7 +228,7 @@ export const show = async (
     // 准备数据
     const { id } = request.params;
 
-    // 获取资源
+    // 获取资源（仅返回已审核的资源，status 字段不返回）
     try {
         const resource: any = await getResourceById(parseInt(id, 10));
         // 将 file_url 转换为完整 URL（如果需要）
@@ -202,6 +241,8 @@ export const show = async (
         }
 
         // 附加教材信息（如果已绑定）
+        // 扩展字段：textbooks 和 catalog_info 仅在资源关联教材时存在
+        // 这些字段未来可能增强，但保证向后兼容（不会删除现有字段）
         try {
             const textbooks = await getResourceTextbooks(resource.id);
             if (textbooks && textbooks.length > 0) {
@@ -224,6 +265,7 @@ export const show = async (
         }
 
         // chapter_info 原样返回（已经是 resource 的一部分）
+        // 所有字段已按标准接口规范返回，详见：docs/api/resource-detail-api-standard.md
 
         response.send(resource);
     } catch (error) {
