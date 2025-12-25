@@ -19,11 +19,10 @@ export const login = async (
       user: { id, name, email, role, created_at, updated_at, avatar },
     } = request.body;
 
-    // 构建 token payload（包含用户 ID、name、email、role）
+    // 构建 token payload（包含用户 ID 和 role）
+    // 按照需求，token payload 只包含 uid 和 role
     const payload = {
-      id,
-      name,
-      email,
+      uid: id, // 使用 uid 作为字段名
       role: role || 'user', // 默认角色为 user
     };
 

@@ -35,8 +35,9 @@ export const validateUserData = async (
     if (userEmail) return next(new Error('EMAIL_ALREADY_EXIST'));
   }
 
-  // 验证角色（如果提供）
-  if (role && !['user', 'admin'].includes(role)) {
+  // 验证角色（如果提供，支持 user、editor、admin）
+  // 但注册时只能创建 user 角色
+  if (role && !['user', 'editor', 'admin'].includes(role)) {
     return next(new Error('INVALID_ROLE'));
   }
 
@@ -87,8 +88,8 @@ export const validateUpdateUserData = async (
   // 兼容处理：如果没有 update 字段，但直接有 name/email/password 字段，则自动包裹
   let updateData = update;
   if (!updateData || typeof updateData !== 'object') {
-    // 检查是否直接提供了更新字段
-    const directFields = ['name', 'email', 'password', 'nickname'];
+    // 检查是否直接提供了更新字段（注意：user表中没有nickname字段，只有name字段）
+    const directFields = ['name', 'email', 'password'];
     const hasDirectFields = directFields.some(field => request.body[field] !== undefined);
     
     if (hasDirectFields) {
@@ -97,7 +98,6 @@ export const validateUpdateUserData = async (
       if (request.body.name !== undefined) updateData.name = request.body.name;
       if (request.body.email !== undefined) updateData.email = request.body.email;
       if (request.body.password !== undefined) updateData.password = request.body.password;
-      if (request.body.nickname !== undefined) updateData.nickname = request.body.nickname;
       
       // 将包裹后的数据设置回 request.body
       request.body.update = updateData;

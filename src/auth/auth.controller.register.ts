@@ -23,21 +23,25 @@ export const register = async (
     // 准备数据（从 validateUserData 和 hashPassword 中间件处理后）
     const { name, username, email, password, role = 'user' } = request.body;
 
-    // 验证角色（只能是 user 或 admin）
-    if (role && !['user', 'admin'].includes(role)) {
+    // 验证角色（只能是 user、editor 或 admin）
+    // 但注册时只能创建 user 角色，editor 和 admin 需要管理员分配
+    const finalRole = role || 'user';
+    if (finalRole !== 'user') {
       return response.status(400).json({
         success: false,
-        message: '角色只能是 user 或 admin',
+        message: '注册时只能创建 user 角色，其他角色需要管理员分配',
         error: 'INVALID_ROLE',
       });
     }
 
     // 构建用户数据（使用 name 或 username）
-    const userData = {
+    const userData: any = {
       name: name || username, // 兼容 name 和 username
+      username: username || name, // 设置 username 字段
       email,
       password, // 已经过 hashPassword 中间件加密
-      role: role || 'user', // 默认角色为 user
+      role: 'user', // 默认角色为 user，注册时只能创建 user
+      status: 'active', // 默认状态为 active
     };
 
     // 创建用户
@@ -51,11 +55,9 @@ export const register = async (
       return next(new Error('USER_CREATE_FAILED'));
     }
 
-    // 构建 token payload
+    // 构建 token payload（按照需求，只包含 uid 和 role）
     const payload = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
+      uid: newUser.id,
       role: (newUser as any).role || 'user',
     };
 

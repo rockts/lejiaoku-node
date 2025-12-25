@@ -53,10 +53,14 @@ export const authGuard = (
   response: Response,
   next: NextFunction,
 ) => {
-  console.log('👮🏼‍♀️ 验证用户身份');
+  // 记录请求信息（用于日志）
+  const uid = request.user?.id || 'anonymous';
+  const path = request.path;
+  console.log(`[Auth] ${request.method} ${path} - UID: ${uid}`);
 
   // 检查是否有用户信息（由 currentUser 中间件注入）
   if (!request.user || !request.user.id) {
+    console.log(`[Auth] 401 Unauthorized - ${request.method} ${path}`);
     return response.status(401).json({
       success: false,
       message: '未授权，请先登录',
@@ -71,7 +75,7 @@ export const authGuard = (
  * 当前用户
  * 从请求头 Authorization 中提取并验证 JWT token，将用户信息注入 request.user
  */
-export const currentUser = (
+export const currentUser = async (
   request: Request,
   response: Response,
   next: NextFunction,
@@ -93,12 +97,30 @@ export const currentUser = (
         }) as any;
 
         // decoded 包含 payload，需要提取 user 信息
-        user = {
-          id: decoded.id || decoded.payload?.id,
-          name: decoded.name || decoded.payload?.name,
-          email: decoded.email || decoded.payload?.email,
-          role: decoded.role || decoded.payload?.role || 'user',
-        };
+        // token payload 格式: { uid, role } 或 { payload: { uid, role } }
+        const payload = decoded.payload || decoded;
+        const uid = payload.uid || payload.id; // 支持 uid 和 id（向后兼容）
+        
+        // 根据 uid 从数据库获取完整用户信息
+        if (uid) {
+          const dbUser = await userService.getUserById(uid as number);
+          if (dbUser) {
+            user = {
+              id: dbUser.id,
+              name: dbUser.name,
+              email: dbUser.email,
+              role: (dbUser as any).role || payload.role || 'user',
+            };
+          }
+        }
+        
+        // 如果数据库查询失败，使用 token 中的信息（向后兼容）
+        if (!user && uid) {
+          user = {
+            id: uid as number,
+            role: payload.role || 'user',
+          };
+        }
       }
     }
   } catch (error) {
@@ -113,6 +135,33 @@ export const currentUser = (
   next();
 };
 
+
+/**
+ * 角色权限守卫
+ * 必须在 authGuard 之后使用
+ * @param roles 允许的角色数组，例如: ['admin', 'editor']
+ */
+export const roleGuard = (roles: string[]) => {
+  return (request: Request, response: Response, next: NextFunction) => {
+    const uid = request.user?.id || 'anonymous';
+    const userRole = request.user?.role || 'user';
+    const path = request.path;
+
+    console.log(`[RoleGuard] ${request.method} ${path} - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
+
+    // 检查用户角色是否在允许的角色列表中
+    if (!roles.includes(userRole)) {
+      console.log(`[RoleGuard] 403 Forbidden - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
+      return response.status(403).json({
+        success: false,
+        message: '权限不足，禁止访问',
+        error: 'FORBIDDEN',
+      });
+    }
+
+    next();
+  };
+};
 
 /**
  * 访问控制

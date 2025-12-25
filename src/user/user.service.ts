@@ -22,24 +22,28 @@ export const createUser = async (user: UserModel) => {
  * 获取用户列表
  */
 export const getUserList = async () => {
-  const statement = `
-    SELECT
-      user.id, 
-      user.name,
-      user.email,
-      user.role,
-      user.created_at,
-      user.updated_at,
-      IF (
-        COUNT(avatar.id), 1, NULL
-      ) AS avatar
-    FROM 
-      user
-    LEFT JOIN avatar
-       ON avatar.userId = user.id
+  const       statement = `
+        SELECT
+          user.id, 
+          user.name,
+          user.username,
+          user.email,
+          user.role,
+          user.nickname,
+          user.avatar_url,
+          user.status,
+          user.created_at,
+          user.updated_at,
+          IF (
+            COUNT(avatar.id), 1, NULL
+          ) AS avatar
+        FROM 
+          user
+        LEFT JOIN avatar
+           ON avatar.userId = user.id
 
-    GROUP BY user.id
-  `;
+        GROUP BY user.id
+      `;
 
   const [data] = await connection.promise().query(statement);
 
@@ -68,9 +72,13 @@ export const getUser = (condition: string) => {
         SELECT 
           user.id,
           user.name,
+          user.username,
           user.email,
           user.role,
           user.password,
+          user.nickname,
+          user.avatar_url,
+          user.status,
           user.created_at,
           user.updated_at
         FROM
@@ -84,8 +92,12 @@ export const getUser = (condition: string) => {
         SELECT 
           user.id,
           user.name,
+          user.username,
           user.email,
           user.role,
+          user.nickname,
+          user.avatar_url,
+          user.status,
           user.created_at,
           user.updated_at,
           IF (
@@ -110,9 +122,17 @@ export const getUser = (condition: string) => {
 };
 
 /**
- * 按用户名获取用户
+ * 按用户名获取用户（支持 name 或 username 字段）
  */
-export const getUserByName = getUser('user.name');
+export const getUserByName = async (nameOrUsername: string, options: GetUserOptions = {}) => {
+  // 先尝试用 name 查找
+  let user = await getUser('user.name')(nameOrUsername, options);
+  // 如果没找到，尝试用 username 查找
+  if (!user) {
+    user = await getUser('user.username')(nameOrUsername, options);
+  }
+  return user;
+};
 
 /**
  * 按用户 ID 获取用户

@@ -7,7 +7,8 @@ import postRouter from '../post/post.router';
 import userRouter from '../user/user.router';
 import authRouter from '../auth/auth.router';
 import coverRouter from '../cover/cover.router';
-import fileRouter from '../file/file.router';
+// @deprecated File 模块已废弃，请使用 Resource 模块
+// import fileRouter from '../file/file.router';
 import { currentUser } from '../auth/auth.middleware';
 import tagRouter from '../tag/tag.router';
 import commentRouter from '../comment/comment.router';
@@ -60,7 +61,7 @@ app.use(
   userRouter,
   authRouter,
   coverRouter,
-  fileRouter,
+  // fileRouter, // @deprecated File 模块已废弃，请使用 Resource 模块
   tagRouter,
   avatarRouter,
   commentRouter,

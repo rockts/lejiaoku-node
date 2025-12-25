@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import fs from 'fs';
+import Jimp from 'jimp';
 
 /**
  * 确保上传目录存在
@@ -281,6 +282,75 @@ export const resourceWithCoverInterceptor = (
   ]);
 
   upload(req, res, next);
+};
+
+/**
+ * 封面图片尺寸调整处理器
+ * 为 Resource 模块上传的封面生成多种尺寸
+ */
+export const resourceCoverProcessor = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  // 检查是否有封面上传
+  const coverFile = request.files && (request.files as any).cover?.[0];
+  
+  if (!coverFile) {
+    // 没有封面上传，直接下一步
+    return next();
+  }
+
+  try {
+    // 准备文件路径
+    const filePath = path.join(coverFile.destination, 'resized', coverFile.filename);
+
+    // 确保 resized 目录存在
+    const resizedDir = path.join(coverFile.destination, 'resized');
+    if (!fs.existsSync(resizedDir)) {
+      fs.mkdirSync(resizedDir, { recursive: true });
+    }
+
+    // 读取图片
+    const image = await Jimp.read(coverFile.path);
+    const { width, height } = image['bitmap'];
+
+    // 生成大尺寸（1280px宽度）
+    if (width > 1280) {
+      image
+        .clone()
+        .resize(1280, Jimp.AUTO)
+        .quality(85)
+        .write(`${filePath}-large`);
+    }
+
+    // 生成中等尺寸（640px宽度）
+    if (width > 640) {
+      image
+        .clone()
+        .resize(640, Jimp.AUTO)
+        .quality(85)
+        .write(`${filePath}-medium`);
+    }
+
+    // 生成缩略图（320px宽度）
+    if (width > 320) {
+      image
+        .clone()
+        .resize(320, Jimp.AUTO)
+        .quality(85)
+        .write(`${filePath}-thumbnail`);
+    }
+
+    console.log('🌄 封面图片尺寸调整完成');
+  } catch (error) {
+    // 如果图片处理失败，记录错误但不中断流程
+    console.error('⚠️ 封面图片尺寸调整失败:', error);
+    // 继续执行，使用原始封面
+  }
+
+  // 下一步
+  next();
 };
 
 /**
