@@ -178,7 +178,18 @@ export const update = async (
     }
 
     // 5. 执行更新
-    await updateResource(resourceId, updates);
+    try {
+      await updateResource(resourceId, updates);
+      console.log('✅ [更新资源] 数据库更新成功');
+    } catch (error) {
+      console.error('❌ [更新资源] 数据库更新失败:', error);
+      // 如果是数据库错误，返回更详细的错误信息
+      if ((error as any).code) {
+        console.error('  错误代码:', (error as any).code);
+        console.error('  错误消息:', (error as any).sqlMessage || (error as any).message);
+      }
+      throw error; // 重新抛出错误，让错误处理器处理
+    }
 
     // 6. 如果修改了 subject/grade/textbook 等字段，尝试更新 catalog_info
     // 这里暂时不自动更新，因为需要匹配 textbook_catalog 表

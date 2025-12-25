@@ -206,6 +206,12 @@ export const resourceWithCoverInterceptor = (
   res: Response,
   next: NextFunction,
 ) => {
+  // 调试日志：检查请求类型和 Content-Type
+  console.log('📤 [resourceWithCoverInterceptor] 接收到请求:');
+  console.log('  method:', req.method);
+  console.log('  path:', req.path);
+  console.log('  Content-Type:', req.headers['content-type']);
+  
   // 使用 multer 的 fields 方法，但需要自定义 storage 来处理不同字段
   const upload = multer({
     storage: multer.diskStorage({
@@ -281,7 +287,27 @@ export const resourceWithCoverInterceptor = (
     { name: 'cover', maxCount: 1 },
   ]);
 
-  upload(req, res, next);
+  // 添加错误处理和调试日志
+  upload(req, res, (err: any) => {
+    if (err) {
+      console.error('❌ [resourceWithCoverInterceptor] Multer 错误:', err);
+      return next(err);
+    }
+    
+    // 调试日志：检查文件上传结果
+    console.log('✅ [resourceWithCoverInterceptor] 文件上传完成:');
+    console.log('  req.files:', req.files);
+    console.log('  req.file:', req.file);
+    
+    if (req.files) {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      Object.keys(files).forEach(fieldname => {
+        console.log(`  ${fieldname}:`, files[fieldname].map(f => ({ filename: f.filename, size: f.size })));
+      });
+    }
+    
+    next();
+  });
 };
 
 /**

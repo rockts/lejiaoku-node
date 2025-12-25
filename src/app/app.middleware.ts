@@ -257,6 +257,19 @@ export const defaultErrorHandler = (
       statusCode = 500;
       message = '服务暂时出了点问题 ~~ 🌴';
       console.log('❌ 未处理的错误:', error.message, error);
+      // 如果是数据库错误，提供更详细的错误信息
+      if (error.code && error.code.startsWith('ER_')) {
+        console.log('  数据库错误代码:', error.code);
+        console.log('  SQL 错误消息:', error.sqlMessage);
+        // 可以根据不同的数据库错误返回不同的提示
+        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+          message = '数据关联错误，请检查数据完整性';
+        } else if (error.code === 'ER_DUP_ENTRY') {
+          message = '数据已存在，请勿重复提交';
+        } else if (error.code === 'ER_BAD_FIELD_ERROR') {
+          message = '数据库字段错误，请联系管理员';
+        }
+      }
       break;
   }
 
