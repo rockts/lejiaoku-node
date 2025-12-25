@@ -18,6 +18,7 @@ import saveRouter from '../save/save.router';
 import appRouter from './app.router';
 import resourceRouter from '../resource/resource.router';
 import textbookRouter from '../textbook/textbook.router';
+import contributorApplicationRouter from '../contributor-application/contributor-application.router';
 import { defaultErrorHandler } from './app.middleware';
 
 /**
@@ -79,6 +80,7 @@ app.use(currentUser);
     app.use('/api', userRouter);
     app.use('/api', resourceRouter);
     app.use('/api', avatarRouter); // 头像上传接口
+    app.use('/api', contributorApplicationRouter); // Contributor 申请接口
     
     /**
      * 后台管理路由（支持 /admin/* 路径，兼容前端直接访问）
