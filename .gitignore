@@ -46,3 +46,4 @@ coverage/
 *.tmp
 *.temp
 
+.env.bak

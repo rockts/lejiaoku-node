@@ -342,3 +342,4 @@ Authorization: Bearer <token>
 - 封面图片：`http://localhost:3000/uploads/cover/{filename}`
 - 头像图片：`http://localhost:3000/uploads/avatar/{filename}`
 
+
