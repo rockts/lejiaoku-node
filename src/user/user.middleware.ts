@@ -84,15 +84,34 @@ export const validateUpdateUserData = async (
   // 当前用户
   const { id: userId } = request.user;
 
-  // 如果没有 update 字段，直接返回错误
-  if (!update || typeof update !== 'object') {
-    return next(new Error('UPDATE_DATA_REQUIRED'));
+  // 兼容处理：如果没有 update 字段，但直接有 name/email/password 字段，则自动包裹
+  let updateData = update;
+  if (!updateData || typeof updateData !== 'object') {
+    // 检查是否直接提供了更新字段
+    const directFields = ['name', 'email', 'password', 'nickname'];
+    const hasDirectFields = directFields.some(field => request.body[field] !== undefined);
+    
+    if (hasDirectFields) {
+      // 自动包裹到 update 字段中
+      updateData = {};
+      if (request.body.name !== undefined) updateData.name = request.body.name;
+      if (request.body.email !== undefined) updateData.email = request.body.email;
+      if (request.body.password !== undefined) updateData.password = request.body.password;
+      if (request.body.nickname !== undefined) updateData.nickname = request.body.nickname;
+      
+      // 将包裹后的数据设置回 request.body
+      request.body.update = updateData;
+      console.log('✅ 自动包裹更新数据:', JSON.stringify(updateData, null, 2));
+    } else {
+      // 既没有 update 字段，也没有直接字段，返回错误
+      return next(new Error('UPDATE_DATA_REQUIRED'));
+    }
   }
 
   try {
     // 调取用户数据（如果需要验证密码或更新密码时才需要 password）
     let user = null;
-    const needPassword = update && update.password;
+    const needPassword = updateData && updateData.password;
     
     if (needPassword) {
       // 如果要修改密码，必须提供当前密码进行验证
@@ -112,8 +131,8 @@ export const validateUpdateUserData = async (
     }
 
     // 检查用户名是否被占用（排除当前用户）
-    if (update && update.name) {
-      const existingUser = await userService.getUserByName(update.name);
+    if (updateData && updateData.name) {
+      const existingUser = await userService.getUserByName(updateData.name);
 
       if (existingUser && existingUser.id !== userId) {
         return next(new Error('USER_ALREADY_EXIST'));
@@ -121,8 +140,8 @@ export const validateUpdateUserData = async (
     }
 
     // 处理用户邮箱是否占用（排除当前用户）
-    if (update && update.email) {
-      const existingUser = await userService.getUserByEmail(update.email);
+    if (updateData && updateData.email) {
+      const existingUser = await userService.getUserByEmail(updateData.email);
 
       if (existingUser && existingUser.id !== userId) {
         return next(new Error('EMAIL_ALREADY_EXIST'));
@@ -130,21 +149,21 @@ export const validateUpdateUserData = async (
     }
 
     // 处理用户更新密码（仅在修改密码时需要）
-    if (update && update.password) {
+    if (updateData && updateData.password) {
       // 如果之前没有获取用户数据，现在获取
       if (!user) {
         user = await userService.getUserById(userId, { password: true });
       }
 
       // 检查新密码是否与当前密码相同
-      const matched = await bcrypt.compare(update.password, user.password);
+      const matched = await bcrypt.compare(updateData.password, user.password);
 
       if (matched) {
         return next(new Error('PASSWORD_IS_THE_SAME'));
       }
 
       // HASH 用户更新密码
-      request.body.update.password = await bcrypt.hash(update.password, 10);
+      request.body.update.password = await bcrypt.hash(updateData.password, 10);
     }
   } catch (error) {
     return next(error);
