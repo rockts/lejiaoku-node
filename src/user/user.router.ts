@@ -6,7 +6,8 @@ import {
   hashPassword,
   validateUpdateUserData,
 } from './user.middleware';
-import { authGuard, roleGuard } from '../auth/auth.middleware';
+import { authGuard } from '../auth/auth.middleware';
+import { adminGuard } from '../auth/admin.middleware';
 
 const router = express.Router();
 
@@ -59,6 +60,18 @@ router.put(
 router.delete('/users/:userId', authGuard, userController.destroy);
 
 /**
+ * 获取用户列表（管理员接口）
+ * GET /api/admin/users
+ * 权限：仅 admin
+ */
+router.get(
+  '/admin/users',
+  authGuard, // 需要登录
+  adminGuard, // 仅允许 admin 角色
+  userAdminController.getUserList,
+);
+
+/**
  * 修改用户角色（管理员接口）
  * PATCH /api/admin/users/:id/role
  * 权限：仅 admin
@@ -66,7 +79,7 @@ router.delete('/users/:userId', authGuard, userController.destroy);
 router.patch(
   '/admin/users/:id/role',
   authGuard, // 需要登录
-  roleGuard(['admin']), // 仅允许 admin 角色
+  adminGuard, // 仅允许 admin 角色
   userAdminController.updateUserRole,
 );
 

@@ -3,7 +3,10 @@ import * as resourceController from './resource.controller';
 import * as resourceAutoMetaController from './resource-auto-meta.controller';
 import * as updateResourceController from './resource.controller.update';
 import * as deleteResourceController from './resource.controller.delete';
+import * as resourceAdminController from './resource.controller.admin';
+import * as resourceUserController from './resource.controller.user';
 import { authGuard, roleGuard } from '../auth/auth.middleware';
+import { adminGuard } from '../auth/admin.middleware';
 import { resourcePermissionGuard } from './resource.permission.middleware';
 import { filter, adminFilter, myResourcesFilter, paginate, resourceFileInterceptor, resourceWithCoverInterceptor, resourceCoverProcessor } from './resource.middleware';
 
@@ -21,12 +24,26 @@ router.get(
 
 /**
  * 我的资源列表（当前用户的所有资源）
+ * GET /api/my/resources
+ * 权限：需要登录
  */
 router.get(
   '/my/resources',
+  authGuard, // 需要登录
   myResourcesFilter, // 过滤当前用户的资源
   paginate(30),
   resourceController.myResources,
+);
+
+/**
+ * 获取指定用户的资源列表
+ * GET /api/users/:userId/resources
+ * 权限：公开访问（只返回已审核的资源）
+ */
+router.get(
+  '/users/:userId/resources',
+  paginate(30),
+  resourceUserController.getUserResources,
 );
 
 /**
@@ -78,26 +95,27 @@ router.post(
 
 /**
  * 管理员资源列表（显示所有状态的资源，用于审核）
- * 注意：这是管理员接口，生产环境需要添加权限验证
- * 开发期暂不加 authGuard
+ * GET /api/admin/resources
+ * 权限：仅 admin
+ * 支持查询参数：status, uploader_id
  */
 router.get(
   '/admin/resources',
-  adminFilter, // 管理员过滤器（不过滤status，或按status过滤）
-  paginate(30),
-  resourceController.adminIndex,
+  authGuard, // 需要登录
+  adminGuard, // 仅允许 admin 角色
+  resourceAdminController.getResourceList,
 );
 
 /**
  * 审核资源状态（管理员接口）
- * 权限：仅允许 editor 和 admin
- * user 调用此接口将返回 403
+ * PATCH /api/admin/resources/:id/status
+ * 权限：仅 admin
  */
 router.patch(
   '/admin/resources/:id/status',
   authGuard, // 需要登录
-  roleGuard(['admin', 'editor']), // 仅允许 admin 或 editor 角色
-  resourceController.updateStatus,
+  adminGuard, // 仅允许 admin 角色
+  resourceAdminController.updateResourceStatusByAdmin,
 );
 
 /**
