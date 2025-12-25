@@ -53,19 +53,19 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
  */
 app.use(currentUser);
 
-/**
- * 路由
- */
-app.use(
-  postRouter, // @deprecated Post 模块已废弃，请使用 Resource 模块
-  userRouter,
-  authRouter,
-  coverRouter,
-  // fileRouter, // @deprecated File 模块已废弃，请使用 Resource 模块
-  tagRouter,
-  avatarRouter,
-  commentRouter,
-  likeRouter,
+    /**
+     * 路由
+     */
+    app.use(
+      postRouter, // @deprecated Post 模块已废弃，请使用 Resource 模块
+      userRouter,
+      authRouter,
+      coverRouter,
+      // fileRouter, // @deprecated File 模块已废弃，请使用 Resource 模块
+      tagRouter,
+      avatarRouter,
+      commentRouter,
+      likeRouter,
       saveRouter,
       appRouter,
       resourceRouter, // /resources - 资源管理（唯一权威模型）
@@ -73,13 +73,20 @@ app.use(
     );
 
     /**
-     * Resource API 路由（前端规范路径，唯一权威的资源管理模型）
-     * 同时支持 /resources 和 /api/resources
-     * 
-     * Resource 模块是系统唯一的资源管理模型，替代了旧的 Post 模块。
-     * 所有新功能应使用 Resource 模块，Post 模块仅保留用于向后兼容。
+     * API 路由（统一挂载在 /api 下）
+     * 包括用户管理、资源管理等后台接口
      */
+    app.use('/api', userRouter);
     app.use('/api', resourceRouter);
+    app.use('/api', avatarRouter); // 头像上传接口
+    
+    /**
+     * 后台管理路由（支持 /admin/* 路径，兼容前端直接访问）
+     * 注意：这些路由已经在 /api 下挂载，这里是为了兼容前端可能访问的路径
+     * 前端开发服务器应该将 /admin/* 代理到后端，或者前端应该访问 /api/admin/*
+     */
+    app.use('/admin', userRouter);
+    app.use('/admin', resourceRouter);
     
     /**
      * Textbook API 路由

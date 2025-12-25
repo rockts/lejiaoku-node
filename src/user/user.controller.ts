@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import { UserModel } from './user.model';
 import { deleteUser, createUser, updateUser, getUserList, getUserById, getUserTotalCount } from './user.service';
+import { connection } from '../app/database/mysql';
 
 /**
  * 用户列表
@@ -125,24 +126,64 @@ export const update = async (
 
 /**
  * 删除用户
+ * DELETE /api/users/:userId
+ * 权限：仅 admin 允许删除用户
  */
 export const destroy = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 准备数据
-  const { userId } = request.params;
-
-  // 删除用户
   try {
+    // 准备数据
+    const { userId } = request.params;
+    const targetUserId = parseInt(userId, 10);
 
-    const data = await deleteUser(parseInt(userId, 10));
+    if (isNaN(targetUserId)) {
+      return response.status(400).json({
+        error: 'invalid_user_id',
+        message: 'Invalid user ID',
+        success: false,
+      });
+    }
+
+    // 检查用户是否存在
+    const existingUser = await getUserById(targetUserId);
+    if (!existingUser) {
+      return response.status(404).json({
+        error: 'user_not_found',
+        message: 'User not found',
+        success: false,
+      });
+    }
+
+    // 禁止删除最后一个 admin
+    if ((existingUser as any).role === 'admin') {
+      const [adminCountResult] = await connection.promise().query(
+        `SELECT COUNT(*) as count FROM user WHERE role = 'admin'`,
+      );
+      const adminCount = (adminCountResult as any[])[0].count;
+
+      if (adminCount <= 1) {
+        return response.status(400).json({
+          error: 'cannot_delete_last_admin',
+          message: 'Cannot delete the last admin user',
+          success: false,
+        });
+      }
+    }
+
+    // 删除用户
+    await deleteUser(targetUserId);
 
     // 做出响应
-    response.send(data);
-
+    response.json({
+      success: true,
+      message: 'User deleted successfully',
+      user_id: targetUserId,
+    });
   } catch (error) {
+    console.error('删除用户失败:', error);
     next(error);
   }
 };

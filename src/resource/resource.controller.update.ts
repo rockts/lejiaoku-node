@@ -8,6 +8,9 @@ import { getResourceByIdForAdmin, updateResource } from './resource.service';
 import { enrichResourceWithCatalogInfo } from './resource-helper.service';
 import { getFullUrl } from './resource.controller';
 import { bindResourceToCatalogByAutoMeta } from '../textbook/textbook.service';
+import fs from 'fs';
+import path from 'path';
+import { URL } from 'url';
 
 /**
  * 更新资源
@@ -64,7 +67,74 @@ export const update = async (
       });
     }
 
-    // 3. 准备更新数据
+    // 3. 处理封面上传（如果有新封面上传，删除旧封面）
+    let newCoverUrl: string | undefined;
+    
+    // 调试日志：检查 request.files 结构
+    console.log('🔍 [更新资源] 检查封面上传:');
+    console.log('  request.files:', request.files);
+    console.log('  request.files?.cover:', (request.files as any)?.cover);
+    
+    const coverFile = request.files && (request.files as any).cover?.[0];
+    console.log('  coverFile:', coverFile ? { filename: coverFile.filename, fieldname: coverFile.fieldname } : 'null');
+    
+    if (coverFile) {
+      // 有新封面上传：使用上传的封面文件
+      newCoverUrl = `/uploads/cover/${coverFile.filename}`;
+      console.log('✅ [更新资源] 检测到新封面上传:', newCoverUrl);
+      
+      // 删除旧封面文件（如果存在）
+      if (existingResource.cover_url) {
+        try {
+          let oldCoverPath = existingResource.cover_url;
+          
+          // 如果是完整URL，提取路径部分
+          if (oldCoverPath.startsWith('http://') || oldCoverPath.startsWith('https://')) {
+            const urlObj = new URL(oldCoverPath);
+            oldCoverPath = urlObj.pathname;
+          }
+          
+          // 转换为绝对路径
+          if (oldCoverPath.startsWith('/')) {
+            const absoluteCoverPath = path.join(process.cwd(), oldCoverPath);
+            
+            // 删除原始封面文件
+            if (fs.existsSync(absoluteCoverPath)) {
+              fs.unlink(absoluteCoverPath, (error) => {
+                if (error) {
+                  console.error(`删除旧封面文件失败: ${absoluteCoverPath}`, error);
+                } else {
+                  console.log(`✅ 旧封面文件已删除: ${absoluteCoverPath}`);
+                }
+              });
+            }
+
+            // 删除 resized 版本的封面文件
+            const coverFilename = path.basename(oldCoverPath);
+            const resizedDir = path.join(process.cwd(), 'uploads/cover/resized');
+            const resizedSizes = ['thumbnail', 'medium', 'large'];
+            
+            resizedSizes.forEach((size) => {
+              const resizedPath = path.join(resizedDir, `${coverFilename}-${size}`);
+              if (fs.existsSync(resizedPath)) {
+                fs.unlink(resizedPath, (error) => {
+                  if (error) {
+                    console.error(`删除旧封面 resized 文件失败: ${resizedPath}`, error);
+                  } else {
+                    console.log(`✅ 旧封面 resized 文件已删除: ${resizedPath}`);
+                  }
+                });
+              }
+            });
+          }
+        } catch (error) {
+          // 删除旧封面失败不影响新封面上传，只记录错误
+          console.error('删除旧封面过程中发生错误:', error);
+        }
+      }
+    }
+
+    // 4. 准备更新数据
     const {
       title,
       category,
@@ -85,7 +155,19 @@ export const update = async (
     if (grade !== undefined) updates.grade = grade;
     if (textbook !== undefined) updates.textbook = textbook;
     if (chapter_info !== undefined) updates.chapter_info = chapter_info;
-    if (cover_url !== undefined) updates.cover_url = cover_url;
+    
+    // 优先使用上传的新封面，否则使用 cover_url（如果提供）
+    if (newCoverUrl) {
+      updates.cover_url = newCoverUrl;
+      console.log('✅ [更新资源] 将使用上传的新封面:', newCoverUrl);
+    } else if (cover_url !== undefined) {
+      updates.cover_url = cover_url;
+      console.log('✅ [更新资源] 将使用提供的 cover_url:', cover_url);
+    } else {
+      console.log('⚠️ [更新资源] 没有提供新封面，cover_url 保持不变');
+    }
+    
+    console.log('📦 [更新资源] 更新对象:', JSON.stringify(updates, null, 2));
 
     // 如果没有要更新的字段，返回错误
     if (Object.keys(updates).length === 0) {
@@ -95,17 +177,17 @@ export const update = async (
       });
     }
 
-    // 4. 执行更新
+    // 5. 执行更新
     await updateResource(resourceId, updates);
 
-    // 5. 如果修改了 subject/grade/textbook 等字段，尝试更新 catalog_info
+    // 6. 如果修改了 subject/grade/textbook 等字段，尝试更新 catalog_info
     // 这里暂时不自动更新，因为需要匹配 textbook_catalog 表
     // 如果需要，可以调用 bindResourceToCatalogByAutoMeta 函数
 
-    // 6. 获取更新后的资源
+    // 7. 获取更新后的资源
     const updatedResource: any = await getResourceByIdForAdmin(resourceId);
 
-    // 7. 转换 URL（如果需要）
+    // 8. 转换 URL（如果需要）
     if (updatedResource.file_url && updatedResource.file_url.startsWith('/')) {
       updatedResource.file_url = getFullUrl(request, updatedResource.file_url);
     }
@@ -113,10 +195,10 @@ export const update = async (
       updatedResource.cover_url = getFullUrl(request, updatedResource.cover_url);
     }
 
-    // 8. 添加 catalog_info（如果已绑定教材目录）
+    // 9. 添加 catalog_info（如果已绑定教材目录）
     const resourceWithCatalogInfo = await enrichResourceWithCatalogInfo(updatedResource);
 
-    // 9. 返回更新后的资源
+    // 10. 返回更新后的资源
     response.send(resourceWithCatalogInfo);
   } catch (error) {
     if ((error as any).message === 'NOT_FOUND') {

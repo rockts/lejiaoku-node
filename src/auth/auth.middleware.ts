@@ -140,22 +140,44 @@ export const currentUser = async (
  * 角色权限守卫
  * 必须在 authGuard 之后使用
  * @param roles 允许的角色数组，例如: ['admin', 'editor']
+ * 
+ * @deprecated 请使用 requireRole，此函数保留用于向后兼容
  */
 export const roleGuard = (roles: string[]) => {
+  return requireRole(roles);
+};
+
+/**
+ * 通用权限校验中间件
+ * 支持单角色或多角色权限校验
+ * 必须在 authGuard 之后使用
+ * 
+ * @param roles 允许的角色数组，例如: ['admin'] 或 ['editor', 'admin']
+ * @returns Express 中间件函数
+ * 
+ * @example
+ * // 单角色
+ * router.post('/resources', authGuard, requireRole(['admin']), controller);
+ * 
+ * @example
+ * // 多角色
+ * router.post('/resources', authGuard, requireRole(['editor', 'admin']), controller);
+ */
+export const requireRole = (roles: string[]) => {
   return (request: Request, response: Response, next: NextFunction) => {
     const uid = request.user?.id || 'anonymous';
-    const userRole = request.user?.role || 'user';
+    const userRole = (request.user as any)?.role || 'user';
     const path = request.path;
 
-    console.log(`[RoleGuard] ${request.method} ${path} - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
+    console.log(`[RequireRole] ${request.method} ${path} - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
 
     // 检查用户角色是否在允许的角色列表中
     if (!roles.includes(userRole)) {
-      console.log(`[RoleGuard] 403 Forbidden - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
+      console.log(`[RequireRole] 403 Forbidden - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
       return response.status(403).json({
+        error: 'permission_denied',
+        message: 'You do not have permission to perform this action',
         success: false,
-        message: '权限不足，禁止访问',
-        error: 'FORBIDDEN',
       });
     }
 

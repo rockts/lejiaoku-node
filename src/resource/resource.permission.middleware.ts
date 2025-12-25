@@ -27,9 +27,9 @@ export const resourcePermissionGuard = async (
     // 1. 检查用户是否已认证（应该已经通过 authGuard）
     if (!request.user || !request.user.id) {
       return response.status(401).json({
+        error: 'unauthorized',
+        message: 'Unauthorized, please login first',
         success: false,
-        message: '未授权，请先登录',
-        error: 'UNAUTHORIZED',
       });
     }
 
@@ -74,9 +74,9 @@ export const resourcePermissionGuard = async (
       // user 角色不允许编辑
       if (userRole === 'user') {
         return response.status(403).json({
+          error: 'permission_denied',
+          message: 'You do not have permission to perform this action',
           success: false,
-          message: 'user 角色不允许编辑资源',
-          error: 'FORBIDDEN',
         });
       }
 
@@ -96,12 +96,12 @@ export const resourcePermissionGuard = async (
     // - admin 可以删除任何资源
     // - contributor/editor 只能删除自己的资源
     if (method === 'DELETE') {
-      // user 角色不允许删除
+      // user 角色不允许删除（但 DELETE 现在只允许 admin，这里保留作为防御性检查）
       if (userRole === 'user') {
         return response.status(403).json({
+          error: 'permission_denied',
+          message: 'You do not have permission to perform this action',
           success: false,
-          message: 'user 角色不允许删除资源',
-          error: 'FORBIDDEN',
         });
       }
 
@@ -118,9 +118,9 @@ export const resourcePermissionGuard = async (
 
     // 权限不足
     return response.status(403).json({
+      error: 'permission_denied',
+      message: 'You do not have permission to perform this action',
       success: false,
-      message: '无权操作此资源',
-      error: 'FORBIDDEN',
     });
   } catch (error) {
     console.error('资源权限验证失败:', error);

@@ -21,7 +21,9 @@ export const getUserList = async (
   try {
     const statement = `
       SELECT 
-        id, 
+        id,
+        username,
+        name,
         COALESCE(nickname, name) as nickname,
         email, 
         role, 

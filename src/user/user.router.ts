@@ -6,7 +6,7 @@ import {
   hashPassword,
   validateUpdateUserData,
 } from './user.middleware';
-import { authGuard } from '../auth/auth.middleware';
+import { authGuard, requireRole } from '../auth/auth.middleware';
 import { adminGuard } from '../auth/admin.middleware';
 
 const router = express.Router();
@@ -56,8 +56,15 @@ router.put(
 
 /**
  * 删除用户
+ * DELETE /api/users/:userId
+ * 权限：仅 admin 允许删除用户
  */
-router.delete('/users/:userId', authGuard, userController.destroy);
+router.delete(
+  '/users/:userId',
+  authGuard, // 需要登录
+  requireRole(['admin']), // 仅允许 admin 删除用户
+  userController.destroy,
+);
 
 /**
  * 获取用户列表（管理员接口）

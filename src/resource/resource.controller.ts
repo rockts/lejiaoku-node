@@ -295,13 +295,13 @@ export const store = async (
         return next(new Error('UNAUTHORIZED'));
     }
 
-    // 权限检查：user 角色不允许上传资源
+    // 权限检查：user 角色不允许上传资源（已在路由层通过 requireRole 验证，这里保留作为防御性检查）
     const userRole = (request.user as any)?.role || 'user';
     if (userRole === 'user') {
         return response.status(403).json({
+            error: 'permission_denied',
+            message: 'You do not have permission to perform this action',
             success: false,
-            message: 'user 角色不允许上传资源，请升级为 contributor、editor 或 admin 角色',
-            error: 'FORBIDDEN',
         });
     }
 
@@ -659,6 +659,84 @@ export const updateStatus = async (
                 success: false,
                 message: '资源不存在',
                 error: 'RESOURCE_NOT_FOUND',
+            });
+        }
+        console.error('审核资源失败:', error);
+        next(error);
+    }
+};
+
+/**
+ * 审核资源（通过审核）
+ * POST /api/resources/:id/approve
+ * 权限：editor / admin
+ * 将资源状态从 pending 改为 approved
+ */
+export const approve = async (
+    request: Request,
+    response: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { id } = request.params;
+        const resourceId = parseInt(id, 10);
+
+        if (isNaN(resourceId)) {
+            return response.status(400).json({
+                error: 'invalid_resource_id',
+                message: 'Invalid resource ID',
+                success: false,
+            });
+        }
+
+        // 获取当前用户信息（用于记录审核人）
+        const userId = request.user?.id;
+        if (!userId) {
+            return response.status(401).json({
+                error: 'unauthorized',
+                message: 'Unauthorized, please login first',
+                success: false,
+            });
+        }
+
+        // 检查资源是否存在
+        const resource: any = await getResourceByIdForAdmin(resourceId);
+        if (!resource) {
+            return response.status(404).json({
+                error: 'resource_not_found',
+                message: 'Resource not found',
+                success: false,
+            });
+        }
+
+        // 验证资源当前状态：必须是 pending 才能审核
+        if (resource.status !== 'pending') {
+            return response.status(400).json({
+                error: 'resource_not_pending',
+                message: `Resource current status is ${resource.status}, only pending resources can be approved`,
+                success: false,
+                current_status: resource.status,
+            });
+        }
+
+        // 更新资源状态为 approved（包含审核人信息）
+        await updateResourceStatus(resourceId, 'approved', userId);
+
+        // 获取更新后的资源信息
+        const updatedResource: any = await getResourceByIdForAdmin(resourceId);
+
+        // 返回更新后的资源
+        response.json({
+            success: true,
+            message: 'Resource approved successfully',
+            resource: updatedResource,
+        });
+    } catch (error) {
+        if ((error as any).message === 'NOT_FOUND') {
+            return response.status(404).json({
+                error: 'resource_not_found',
+                message: 'Resource not found',
+                success: false,
             });
         }
         console.error('审核资源失败:', error);
