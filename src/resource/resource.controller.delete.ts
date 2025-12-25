@@ -40,12 +40,27 @@ export const destroy = async (
     }
 
     // 2. 权限验证（已在 resourcePermissionGuard 中完成，这里保留作为双重检查）
+    // 删除权限规则：admin 可删除任何资源，user 不允许删除，contributor/editor 只能删除自己的资源
     const userId = request.user?.id;
     const userRole = (request.user as any)?.role || 'user';
     const isAdmin = userRole === 'admin';
     const isOwner = existingResource.user_id === userId;
 
-    if (!userId || (!isAdmin && !isOwner)) {
+    // user 角色不允许删除任何资源
+    if (userRole === 'user') {
+      return response.status(403).json({
+        success: false,
+        message: 'user 角色不允许删除资源',
+        error: 'FORBIDDEN',
+      });
+    }
+
+    // admin 可以删除任何资源
+    if (isAdmin) {
+      // 允许删除
+    } else if (isOwner) {
+      // contributor 和 editor 只能删除自己的资源
+    } else {
       return response.status(403).json({
         success: false,
         message: '无权删除此资源',

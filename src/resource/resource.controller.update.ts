@@ -32,15 +32,31 @@ export const update = async (
       return next(new Error('RESOURCE_NOT_FOUND'));
     }
 
-    // 2. 权限验证：仅创建者或 admin 可修改
+    // 2. 权限验证：admin、editor 或资源所有者可修改
     // 注意：此处的权限验证已由 resourcePermissionGuard 中间件完成
     // 这里保留作为双重检查（防御性编程）
     const userId = request.user?.id;
     const userRole = (request.user as any)?.role || 'user';
     const isAdmin = userRole === 'admin';
+    const isEditor = userRole === 'editor';
+    const isContributor = userRole === 'contributor';
     const isOwner = existingResource.user_id === userId;
 
-    if (!userId || (!isAdmin && !isOwner)) {
+    // user 角色不允许修改任何资源
+    if (userRole === 'user') {
+      return response.status(403).json({
+        success: false,
+        message: 'user 角色不允许修改资源',
+        error: 'FORBIDDEN',
+      });
+    }
+
+    // admin 和 editor 可以修改任何资源
+    if (isAdmin || isEditor) {
+      // 允许修改
+    } else if (isContributor && isOwner) {
+      // contributor 只能修改自己的资源
+    } else {
       return response.status(403).json({
         success: false,
         message: '无权修改此资源',

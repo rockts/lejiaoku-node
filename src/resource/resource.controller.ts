@@ -295,6 +295,16 @@ export const store = async (
         return next(new Error('UNAUTHORIZED'));
     }
 
+    // 权限检查：user 角色不允许上传资源
+    const userRole = (request.user as any)?.role || 'user';
+    if (userRole === 'user') {
+        return response.status(403).json({
+            success: false,
+            message: 'user 角色不允许上传资源，请升级为 contributor、editor 或 admin 角色',
+            error: 'FORBIDDEN',
+        });
+    }
+
     // 验证必填字段
     if (!title) return next(new Error('TITLE_IS_REQUIRED'));
     if (!category) return next(new Error('CATEGORY_IS_REQUIRED'));
@@ -365,8 +375,16 @@ export const store = async (
     }
 
     // 默认状态为 pending（需要审核）
-    // 如果需要在开发环境下自动批准，可以设置环境变量 AUTO_APPROVE_RESOURCES=true
-    const status = process.env.AUTO_APPROVE_RESOURCES === 'true' ? 'approved' : 'pending';
+    // contributor 上传的资源默认为 pending
+    // editor 和 admin 上传的资源可以根据环境变量自动批准
+    let status = 'pending';
+    if (userRole === 'editor' || userRole === 'admin') {
+        // editor 和 admin 上传的资源，如果设置了环境变量可以自动批准
+        if (process.env.AUTO_APPROVE_RESOURCES === 'true') {
+            status = 'approved';
+        }
+    }
+    // contributor 上传的资源始终为 pending，需要审核
 
     // 准备资源数据
     // 处理 chapter_info：章节信息（非结构化文本，可选）
@@ -550,32 +568,76 @@ export const download = async (
 
 /**
  * 审核资源状态（管理员接口）
- * 注意：这是管理员接口，生产环境需要添加权限验证
- * 开发期暂不加 authGuard
+ * 权限：仅允许 editor 和 admin
+ * 状态流转：pending → approved 或 pending → rejected
+ * 非 pending 状态的资源不可再次审核
  */
 export const updateStatus = async (
     request: Request,
     response: Response,
     next: NextFunction,
 ) => {
-    // 准备数据
-    const { id } = request.params;
-    const { status } = request.body;
-
-    // 验证 status 值
-    if (status !== 'approved' && status !== 'rejected') {
-        return next(new Error('INVALID_STATUS'));
-    }
-
     try {
-        // 先检查资源是否存在（不检查 status，因为 pending 的资源也需要能审核）
-        const resource: any = await getResourceByIdForAdmin(parseInt(id, 10));
+        // 准备数据
+        const { id } = request.params;
+        const { status } = request.body;
+        const resourceId = parseInt(id, 10);
 
-        // 更新资源状态
-        await updateResourceStatus(parseInt(id, 10), status);
+        if (isNaN(resourceId)) {
+            return response.status(400).json({
+                success: false,
+                message: '无效的资源ID',
+                error: 'INVALID_RESOURCE_ID',
+            });
+        }
+
+        // 验证 status 值（只允许 approved 或 rejected）
+        if (status !== 'approved' && status !== 'rejected') {
+            return response.status(400).json({
+                success: false,
+                message: '无效的状态值，只允许 approved 或 rejected',
+                error: 'INVALID_STATUS',
+            });
+        }
+
+        // 获取当前用户信息（用于记录审核人）
+        const userId = request.user?.id;
+        const userRole = (request.user as any)?.role || 'user';
+
+        // 权限验证：仅允许 editor 和 admin（已在路由层通过 roleGuard 验证，这里作为双重检查）
+        if (userRole !== 'admin' && userRole !== 'editor') {
+            return response.status(403).json({
+                success: false,
+                message: '无权访问审核接口，仅 editor 和 admin 可以审核资源',
+                error: 'FORBIDDEN',
+            });
+        }
+
+        // 检查资源是否存在
+        const resource: any = await getResourceByIdForAdmin(resourceId);
+        if (!resource) {
+            return response.status(404).json({
+                success: false,
+                message: '资源不存在',
+                error: 'RESOURCE_NOT_FOUND',
+            });
+        }
+
+        // 验证资源当前状态：必须是 pending 才能审核
+        if (resource.status !== 'pending') {
+            return response.status(400).json({
+                success: false,
+                message: `资源当前状态为 ${resource.status}，只有 pending 状态的资源可以审核`,
+                error: 'RESOURCE_NOT_PENDING',
+                current_status: resource.status,
+            });
+        }
+
+        // 更新资源状态（包含审核人信息，如果数据库有 reviewed_by 和 reviewed_at 字段）
+        await updateResourceStatus(resourceId, status, userId);
 
         // 获取更新后的资源信息
-        const updatedResource: any = await getResourceByIdForAdmin(parseInt(id, 10));
+        const updatedResource: any = await getResourceByIdForAdmin(resourceId);
 
         // 将 file_url 和 cover_url 转换为完整 URL（如果需要）
         if (updatedResource.file_url && updatedResource.file_url.startsWith('/')) {
@@ -586,8 +648,20 @@ export const updateStatus = async (
         }
 
         // 返回更新后的资源
-        response.send(updatedResource);
+        response.json({
+            success: true,
+            message: `资源已${status === 'approved' ? '通过' : '拒绝'}审核`,
+            resource: updatedResource,
+        });
     } catch (error) {
+        if ((error as any).message === 'NOT_FOUND') {
+            return response.status(404).json({
+                success: false,
+                message: '资源不存在',
+                error: 'RESOURCE_NOT_FOUND',
+            });
+        }
+        console.error('审核资源失败:', error);
         next(error);
     }
 };

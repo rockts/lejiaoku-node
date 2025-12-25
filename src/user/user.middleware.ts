@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import _ from 'lodash';
 import * as userService from './user.service';
+import { USERNAME_REGEX, USERNAME_FORMAT_DESCRIPTION } from './user.constants';
 
 /**
  * 验证用户数据
@@ -14,20 +15,26 @@ export const validateUserData = async (
 ) => {
   console.log('👮‍♂️ 验证用户数据');
 
-  // 准备数据（支持 username 或 name）
+  // 准备数据
+  // username: 登录用户名（必填，需验证格式）
+  // name: 真实姓名（可选，不需要唯一）
   const { name, username, password, email, role } = request.body;
-  const userNameValue = username || name; // 兼容 username 和 name
 
   // 验证必填数据
-  if (!userNameValue) return next(new Error('USERNAME_OR_NAME_IS_REQUIRED'));
+  if (!username) return next(new Error('USERNAME_IS_REQUIRED'));
   if (!password) return next(new Error('PASSWORD_IS_REQUIRED'));
   // email 可选，但如果有则验证
+  // name 可选（真实姓名）
 
-  // 验证用户名（如果提供了 name/username）
-  if (userNameValue) {
-    const existingUser = await userService.getUserByName(userNameValue);
-    if (existingUser) return next(new Error('USERNAME_ALREADY_EXIST'));
+  // 验证用户名格式
+  // 用户名格式：4-20位，以字母开头，可包含字母、数字、下划线(_)或短横线(-)
+  if (!USERNAME_REGEX.test(username)) {
+    return next(new Error('USERNAME_FORMAT_INVALID'));
   }
+
+  // 验证用户名唯一性（只检查 username，不检查 name）
+  const existingUser = await userService.getUserByName(username);
+  if (existingUser) return next(new Error('USERNAME_ALREADY_EXIST'));
 
   // 验证邮箱（如果提供了 email）
   if (email) {
@@ -35,14 +42,14 @@ export const validateUserData = async (
     if (userEmail) return next(new Error('EMAIL_ALREADY_EXIST'));
   }
 
-  // 验证角色（如果提供，支持 user、editor、admin）
+  // 验证角色（如果提供，支持 user、contributor、editor、admin）
   // 但注册时只能创建 user 角色
-  if (role && !['user', 'editor', 'admin'].includes(role)) {
+  if (role && !['user', 'contributor', 'editor', 'admin'].includes(role)) {
     return next(new Error('INVALID_ROLE'));
   }
 
-  // 将 username 映射到 name（如果使用的是 username）
-  if (username && !name) {
+  // name 作为真实姓名（可选），如果没有提供则使用 username 作为默认值
+  if (!name) {
     request.body.name = username;
   }
 
@@ -78,7 +85,7 @@ export const validateUpdateUserData = async (
 ) => {
   console.log('👮‍♂️ 验证更新用户数据', request.url, request.method);
   console.log('📦 请求体:', JSON.stringify(request.body, null, 2));
-  
+
   // 准备数据
   const { validate, update } = request.body;
 
@@ -91,14 +98,14 @@ export const validateUpdateUserData = async (
     // 检查是否直接提供了更新字段（注意：user表中没有nickname字段，只有name字段）
     const directFields = ['name', 'email', 'password'];
     const hasDirectFields = directFields.some(field => request.body[field] !== undefined);
-    
+
     if (hasDirectFields) {
       // 自动包裹到 update 字段中
       updateData = {};
       if (request.body.name !== undefined) updateData.name = request.body.name;
       if (request.body.email !== undefined) updateData.email = request.body.email;
       if (request.body.password !== undefined) updateData.password = request.body.password;
-      
+
       // 将包裹后的数据设置回 request.body
       request.body.update = updateData;
       console.log('✅ 自动包裹更新数据:', JSON.stringify(updateData, null, 2));
@@ -112,7 +119,7 @@ export const validateUpdateUserData = async (
     // 调取用户数据（如果需要验证密码或更新密码时才需要 password）
     let user = null;
     const needPassword = updateData && updateData.password;
-    
+
     if (needPassword) {
       // 如果要修改密码，必须提供当前密码进行验证
       if (!validate || !validate.password) {
@@ -131,13 +138,21 @@ export const validateUpdateUserData = async (
     }
 
     // 检查用户名是否被占用（排除当前用户）
-    if (updateData && updateData.name) {
-      const existingUser = await userService.getUserByName(updateData.name);
+    // 注意：name 是真实姓名，不需要唯一，所以只检查 username
+    if (updateData && updateData.username) {
+      // 验证用户名格式
+      if (!USERNAME_REGEX.test(updateData.username)) {
+        return next(new Error('USERNAME_FORMAT_INVALID'));
+      }
+
+      const existingUser = await userService.getUserByName(updateData.username);
 
       if (existingUser && existingUser.id !== userId) {
-        return next(new Error('USER_ALREADY_EXIST'));
+        return next(new Error('USERNAME_ALREADY_EXIST'));
       }
     }
+
+    // name 作为真实姓名，不需要唯一性验证，可以重复
 
     // 处理用户邮箱是否占用（排除当前用户）
     if (updateData && updateData.email) {

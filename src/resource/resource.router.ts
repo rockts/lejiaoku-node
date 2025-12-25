@@ -66,12 +66,11 @@ router.get(
 
 /**
  * 创建资源（支持文件上传）
- * 权限：admin, editor
+ * 权限：必须登录（任何已登录用户都可以创建资源）
  */
 router.post(
   '/resources',
   authGuard, // 需要登录
-  roleGuard(['admin', 'editor']), // 需要 admin 或 editor 角色
   resourceWithCoverInterceptor, // 文件上传中间件（支持资源文件 + 封面文件同时上传）
   resourceCoverProcessor, // 封面图片尺寸调整处理器（生成 large/medium/thumbnail）
   resourceController.store,
@@ -91,37 +90,37 @@ router.get(
 
 /**
  * 审核资源状态（管理员接口）
- * 注意：这是管理员接口，生产环境需要添加权限验证
- * 开发期暂不加 authGuard
+ * 权限：仅允许 editor 和 admin
+ * user 调用此接口将返回 403
  */
 router.patch(
   '/admin/resources/:id/status',
-  // authGuard, // TODO: 生产环境需要添加权限验证
+  authGuard, // 需要登录
+  roleGuard(['admin', 'editor']), // 仅允许 admin 或 editor 角色
   resourceController.updateStatus,
 );
 
 /**
  * 更新资源（编辑资源）
  * PUT /api/resources/:id
- * 权限：admin, editor
+ * 权限：admin、editor 或资源所有者
  */
 router.put(
   '/resources/:id',
   authGuard, // 需要登录
-  roleGuard(['admin', 'editor']), // 需要 admin 或 editor 角色
-  resourcePermissionGuard, // 权限验证：仅创建者或 admin
+  resourcePermissionGuard, // 权限验证：admin、editor 或资源所有者
   updateResourceController.update,
 );
 
 /**
  * 删除资源
  * DELETE /api/resources/:id
- * 权限：admin
+ * 权限：admin 可删除任何资源，user/editor 只能删除自己的资源
  */
 router.delete(
   '/resources/:id',
   authGuard, // 需要登录
-  roleGuard(['admin']), // 需要 admin 角色
+  resourcePermissionGuard, // 权限验证：admin 可删除任何，user/editor 只能删除自己的
   deleteResourceController.destroy,
 );
 

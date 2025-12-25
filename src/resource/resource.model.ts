@@ -13,7 +13,9 @@ export class ResourceModel {
   auto_meta_status?: 'pending' | 'done' | 'failed'; // AI元数据识别状态：pending(待识别)/done(已完成)/failed(失败)
   auto_meta_result?: any; // AI识别结果（JSON格式，未来用于存储封面/章节/简介等）
   download_count?: number;
-  status?: string;
+  status?: string; // 资源状态：draft / pending / approved / rejected
+  reviewed_by?: number; // 审核人ID（可选，如果数据库有该字段）
+  reviewed_at?: Date; // 审核时间（可选，如果数据库有该字段）
   source_type?: 'official' | 'user'; // 资源来源类型：'official' 平台资源，'user' 用户贡献资源
   user_id?: number;
   created_at?: Date;

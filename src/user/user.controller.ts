@@ -85,17 +85,19 @@ export const update = async (
   next: NextFunction,
 ) => {
   console.log('📝 更新用户信息');
-  
+
   // 准备数据
   const { id } = request.user;
   const update = request.body.update || {};
-  const userData = _.pick(update, ['name', 'password', 'email']);
-  
+  // name: 真实姓名（可选，不需要唯一）
+  // username: 登录用户名（可选，需验证格式和唯一性）
+  const userData = _.pick(update, ['name', 'username', 'password', 'email', 'description', 'nickname', 'avatar_url']);
+
   // 如果没有要更新的字段，返回错误
   if (Object.keys(userData).length === 0) {
     return next(new Error('NO_UPDATE_FIELDS'));
   }
-  
+
   console.log('👤 用户ID:', id);
   console.log('📋 更新数据:', userData);
 

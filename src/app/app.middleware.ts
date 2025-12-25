@@ -81,11 +81,19 @@ export const defaultErrorHandler = (
       statusCode = 409;
       message = '用户名已被占用';
       break;
+    case 'USERNAME_FORMAT_INVALID':
+      statusCode = 400;
+      message = '用户名格式无效，必须是4-20位，以字母开头，可包含字母、数字、下划线(_)或短横线(-)';
+      break;
     case 'EMAIL_ALREADY_EXIST':
       statusCode = 409;
       message = '邮箱已被占用';
       break;
     case 'USERNAME_OR_NAME_IS_REQUIRED':
+      statusCode = 400;
+      message = '请提供用户名';
+      break;
+    case 'USERNAME_IS_REQUIRED':
       statusCode = 400;
       message = '请提供用户名';
       break;

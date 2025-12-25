@@ -22,7 +22,7 @@ export const createUser = async (user: UserModel) => {
  * 获取用户列表
  */
 export const getUserList = async () => {
-  const       statement = `
+  const statement = `
         SELECT
           user.id, 
           user.name,
@@ -31,6 +31,7 @@ export const getUserList = async () => {
           user.role,
           user.nickname,
           user.avatar_url,
+          user.description,
           user.status,
           user.created_at,
           user.updated_at,
@@ -78,6 +79,7 @@ export const getUser = (condition: string) => {
           user.password,
           user.nickname,
           user.avatar_url,
+          user.description,
           user.status,
           user.created_at,
           user.updated_at
@@ -97,6 +99,7 @@ export const getUser = (condition: string) => {
           user.role,
           user.nickname,
           user.avatar_url,
+          user.description,
           user.status,
           user.created_at,
           user.updated_at,

@@ -34,10 +34,12 @@ export const register = async (
       });
     }
 
-    // 构建用户数据（使用 name 或 username）
+    // 构建用户数据
+    // username: 登录用户名（必填，已通过格式验证）
+    // name: 真实姓名（可选，如果没有提供则使用 username 作为默认值）
     const userData: any = {
-      name: name || username, // 兼容 name 和 username
-      username: username || name, // 设置 username 字段
+      username: username, // 登录用户名（必填）
+      name: name || username, // 真实姓名（可选，默认使用 username）
       email,
       password, // 已经过 hashPassword 中间件加密
       role: 'user', // 默认角色为 user，注册时只能创建 user

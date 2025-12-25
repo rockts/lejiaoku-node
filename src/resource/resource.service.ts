@@ -144,7 +144,9 @@ export const getResourceById = async (resourceId: number) => {
  * 根据 ID 获取资源（管理员，不限制状态）
  */
 export const getResourceByIdForAdmin = async (resourceId: number) => {
-  const statement = `
+  // 尝试查询 reviewed_by 和 reviewed_at 字段（如果存在）
+  // 如果字段不存在，SQL 会报错，需要捕获并回退到不查询这些字段
+  let statement = `
     SELECT
       resource.id,
       resource.title,
@@ -159,6 +161,8 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
       resource.cover_url,
       resource.download_count,
       resource.status,
+      resource.reviewed_by,
+      resource.reviewed_at,
       resource.auto_meta_status,
       resource.auto_meta_result,
       resource.created_at,
@@ -166,11 +170,46 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
     FROM resource
     WHERE resource.id = ?
   `;
-  const [data] = await connection.promise().query(statement, resourceId);
-  if (!data || !data[0] || !data[0].id) {
-    throw new Error('NOT_FOUND');
+
+  try {
+    const [data] = await connection.promise().query(statement, resourceId);
+    if (!data || !data[0] || !data[0].id) {
+      throw new Error('NOT_FOUND');
+    }
+    return data[0];
+  } catch (error) {
+    // 如果字段不存在，回退到不查询这些字段
+    if ((error as any).code === 'ER_BAD_FIELD_ERROR' && (error as any).message.includes('reviewed_by')) {
+      statement = `
+        SELECT
+          resource.id,
+          resource.title,
+          resource.description,
+          resource.category,
+          resource.subject,
+          resource.grade,
+          resource.textbook,
+          resource.chapter_info,
+          resource.file_format,
+          resource.file_url,
+          resource.cover_url,
+          resource.download_count,
+          resource.status,
+          resource.auto_meta_status,
+          resource.auto_meta_result,
+          resource.created_at,
+          resource.updated_at
+        FROM resource
+        WHERE resource.id = ?
+      `;
+      const [data] = await connection.promise().query(statement, resourceId);
+      if (!data || !data[0] || !data[0].id) {
+        throw new Error('NOT_FOUND');
+      }
+      return data[0];
+    }
+    throw error;
   }
-  return data[0];
 };
 
 /**
@@ -187,19 +226,59 @@ export const createResource = async (resource: ResourceModel) => {
 };
 
 /**
- * 更新资源状态
+ * 更新资源状态（审核资源）
+ * @param resourceId 资源ID
+ * @param status 新状态（approved 或 rejected）
+ * @param reviewedBy 审核人ID（可选，如果数据库有 reviewed_by 字段则使用）
  */
 export const updateResourceStatus = async (
   resourceId: number,
   status: string,
+  reviewedBy?: number,
 ) => {
-  const statement = `
-    UPDATE resource
-    SET status = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `;
+  // 检查数据库是否有 reviewed_by 和 reviewed_at 字段
+  // 如果有则更新，如果没有则只更新 status
+  let statement: string;
+  let params: any[];
 
-  await connection.promise().query(statement, [status, resourceId]);
+  // 尝试使用 reviewed_by 和 reviewed_at（如果字段存在）
+  // 注意：如果字段不存在，SQL 会报错，需要捕获并回退到只更新 status
+  try {
+    if (reviewedBy !== undefined) {
+      statement = `
+        UPDATE resource
+        SET 
+          status = ?,
+          reviewed_by = ?,
+          reviewed_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      params = [status, reviewedBy, resourceId];
+    } else {
+      statement = `
+        UPDATE resource
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      params = [status, resourceId];
+    }
+
+    await connection.promise().query(statement, params);
+  } catch (error) {
+    // 如果字段不存在，回退到只更新 status
+    if ((error as any).code === 'ER_BAD_FIELD_ERROR' && (error as any).message.includes('reviewed_by')) {
+      statement = `
+        UPDATE resource
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      params = [status, resourceId];
+      await connection.promise().query(statement, params);
+    } else {
+      throw error;
+    }
+  }
 };
 
 /**

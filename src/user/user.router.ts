@@ -1,11 +1,12 @@
 import express from 'express';
 import * as userController from './user.controller';
+import * as userAdminController from './user.controller.admin';
 import {
   validateUserData,
   hashPassword,
   validateUpdateUserData,
 } from './user.middleware';
-import { authGuard } from '../auth/auth.middleware';
+import { authGuard, roleGuard } from '../auth/auth.middleware';
 
 const router = express.Router();
 
@@ -56,6 +57,18 @@ router.put(
  * 删除用户
  */
 router.delete('/users/:userId', authGuard, userController.destroy);
+
+/**
+ * 修改用户角色（管理员接口）
+ * PATCH /api/admin/users/:id/role
+ * 权限：仅 admin
+ */
+router.patch(
+  '/admin/users/:id/role',
+  authGuard, // 需要登录
+  roleGuard(['admin']), // 仅允许 admin 角色
+  userAdminController.updateUserRole,
+);
 
 /**
  * 导出路由
