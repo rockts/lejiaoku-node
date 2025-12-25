@@ -39,6 +39,8 @@ export const resourcePermissionGuard = async (
     const resourceId = parseInt(id, 10);
     const method = request.method; // 获取 HTTP 方法
 
+    console.log(`[ResourcePermissionGuard] ${method} /api/resources/${resourceId} - User ID: ${userId}, Role: ${userRole}`);
+
     if (isNaN(resourceId)) {
       return response.status(400).json({
         success: false,
@@ -63,7 +65,12 @@ export const resourcePermissionGuard = async (
     }
 
     // 3. 检查权限
-    const isOwner = resource.user_id === userId;
+    // 确保类型一致（都转换为 number）
+    const resourceUserId = Number(resource.user_id);
+    const currentUserId = Number(userId);
+    const isOwner = resourceUserId === currentUserId;
+    console.log(`[ResourcePermissionGuard] Resource user_id: ${resource.user_id} (${typeof resource.user_id}), Current user_id: ${userId} (${typeof userId})`);
+    console.log(`[ResourcePermissionGuard] Resource user_id (num): ${resourceUserId}, Current user_id (num): ${currentUserId}, isOwner: ${isOwner}`);
 
     // 编辑资源（PUT）权限规则：
     // - user 不允许编辑任何资源
@@ -86,34 +93,38 @@ export const resourcePermissionGuard = async (
       }
 
       // contributor 只能编辑自己的资源
-      if (userRole === 'contributor' && isOwner) {
-        return next();
+      if (userRole === 'contributor') {
+        if (isOwner) {
+          console.log(`[ResourcePermissionGuard] ✅ Contributor allowed to edit own resource`);
+          return next();
+        } else {
+          // contributor 尝试编辑他人资源，拒绝
+          console.log(`[ResourcePermissionGuard] ❌ Contributor denied: trying to edit resource owned by user ${resource.user_id}`);
+          return response.status(403).json({
+            error: 'permission_denied',
+            message: 'You do not have permission to perform this action',
+            success: false,
+          });
+        }
       }
     }
 
     // 删除资源（DELETE）权限规则：
-    // - user 不允许删除任何资源
-    // - admin 可以删除任何资源
-    // - contributor/editor 只能删除自己的资源
+    // - 仅 admin 可以删除资源
+    // 注意：DELETE 路由已经使用 requireRole(['admin']) 进行了权限检查
+    // 这里保留作为防御性检查
     if (method === 'DELETE') {
-      // user 角色不允许删除（但 DELETE 现在只允许 admin，这里保留作为防御性检查）
-      if (userRole === 'user') {
-        return response.status(403).json({
-          error: 'permission_denied',
-          message: 'You do not have permission to perform this action',
-          success: false,
-        });
-      }
-
-      // admin 可以删除任何资源
+      // 仅 admin 可以删除资源
       if (userRole === 'admin') {
         return next();
       }
 
-      // contributor 和 editor 只能删除自己的资源
-      if (isOwner) {
-        return next();
-      }
+      // 其他角色不允许删除
+      return response.status(403).json({
+        error: 'permission_denied',
+        message: 'You do not have permission to perform this action',
+        success: false,
+      });
     }
 
     // 权限不足

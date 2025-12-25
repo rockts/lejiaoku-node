@@ -3,6 +3,7 @@ import _ from 'lodash';
 import { UserModel } from './user.model';
 import { deleteUser, createUser, updateUser, getUserList, getUserById, getUserTotalCount } from './user.service';
 import { connection } from '../app/database/mysql';
+import { enrichUserWithAvatarUrl, enrichUserListWithAvatarUrl } from './user.helper';
 
 /**
  * 用户列表
@@ -23,8 +24,10 @@ export const index = async (
   }
 
   try {
-    const user = await getUserList();
-    response.send(user);
+    const userList = await getUserList();
+    // 为每个用户设置 avatar_url（如果有头像）
+    const enrichedUserList = enrichUserListWithAvatarUrl(userList);
+    response.send(enrichedUserList);
   } catch (error) {
     next(error);
   }
@@ -70,8 +73,11 @@ export const show = async (
       return next(new Error('USER_NOT_FOUND'));
     }
 
+    // 为用户设置 avatar_url（如果有头像）
+    const enrichedUser = enrichUserWithAvatarUrl(user, parseInt(userId, 10));
+
     // 做出响应
-    response.send(user);
+    response.send(enrichedUser);
   } catch (error) {
     next(error);
   }
@@ -113,11 +119,14 @@ export const update = async (
       return next(new Error('USER_NOT_FOUND'));
     }
 
+    // 为用户设置 avatar_url（如果有头像）
+    const enrichedUser = enrichUserWithAvatarUrl(updatedUser, id);
+
     // 做出响应（返回更新后的用户信息）
     response.send({
       success: true,
       message: '更新成功',
-      user: updatedUser,
+      user: enrichedUser,
     });
   } catch (error) {
     next(error);

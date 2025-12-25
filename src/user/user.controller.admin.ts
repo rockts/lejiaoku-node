@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as userService from './user.service';
 import { UserModel } from './user.model';
 import { connection } from '../app/database/mysql';
+import { enrichUserWithAvatarUrl } from './user.helper';
 
 /**
  * 获取用户列表（管理员接口）
@@ -115,11 +116,14 @@ export const updateUserRole = async (
     // 获取更新后的用户信息
     const updatedUser = await userService.getUserById(userId);
 
+    // 为用户设置 avatar_url（如果有头像）
+    const enrichedUser = enrichUserWithAvatarUrl(updatedUser, userId);
+
     // 返回更新后的用户信息
     response.json({
       success: true,
       message: '用户角色更新成功',
-      data: updatedUser,
+      data: enrichedUser,
     });
   } catch (error) {
     console.error('更新用户角色失败:', error);

@@ -101,15 +101,22 @@ export const currentUser = async (
         const payload = decoded.payload || decoded;
         const uid = payload.uid || payload.id; // 支持 uid 和 id（向后兼容）
         
-        // 根据 uid 从数据库获取完整用户信息
+        // 根据 uid 从数据库获取完整用户信息（包含 nickname, username 等所有字段）
         if (uid) {
           const dbUser = await userService.getUserById(uid as number);
           if (dbUser) {
             user = {
               id: dbUser.id,
               name: dbUser.name,
+              username: dbUser.username,
+              nickname: (dbUser as any).nickname,
               email: dbUser.email,
               role: (dbUser as any).role || payload.role || 'user',
+              description: (dbUser as any).description,
+              avatar_url: (dbUser as any).avatar_url,
+              avatar: (dbUser as any).avatar,
+              created_at: (dbUser as any).created_at,
+              updated_at: (dbUser as any).updated_at,
             };
           }
         }

@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as userService from '../user/user.service';
 import * as userMiddleware from '../user/user.middleware';
 import { signToken } from './auth.service';
+import { enrichUserWithAvatarUrl } from '../user/user.helper';
 
 /**
  * 注册用户
@@ -70,19 +71,26 @@ export const register = async (
     const user = {
       id: newUser.id,
       name: newUser.name,
+      username: (newUser as any).username,
+      nickname: (newUser as any).nickname,
       email: newUser.email,
       role: (newUser as any).role || 'user',
       created_at: newUser.created_at,
       updated_at: newUser.updated_at,
       avatar: newUser.avatar,
+      description: (newUser as any).description,
+      avatar_url: (newUser as any).avatar_url || null,
     };
+
+    // 为用户设置 avatar_url（如果有头像）
+    const enrichedUser = enrichUserWithAvatarUrl(user, newUser.id);
 
     // 返回响应
     response.status(201).send({
       success: true,
       message: '注册成功',
       token,
-      user,
+      user: enrichedUser,
     });
   } catch (error) {
     next(error);
