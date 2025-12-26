@@ -268,7 +268,18 @@ export const defaultErrorHandler = (
           message = '数据已存在，请勿重复提交';
         } else if (error.code === 'ER_BAD_FIELD_ERROR') {
           message = '数据库字段错误，请联系管理员';
+        } else if (error.code === 'ER_NO_SUCH_TABLE') {
+          // 检查是否是 catalog_tasks 表不存在
+          if (error.sqlMessage && error.sqlMessage.includes('catalog_tasks')) {
+            message = 'catalog_tasks 表不存在，请先执行数据库迁移脚本：scripts/create-catalog-tasks-table.sql';
+          } else {
+            message = '数据库表不存在，请联系管理员';
+          }
         }
+      }
+      // 处理自定义错误消息（来自 service 层）
+      if (error.message && error.message.includes('catalog_tasks 表不存在')) {
+        message = error.message;
       }
       break;
   }
