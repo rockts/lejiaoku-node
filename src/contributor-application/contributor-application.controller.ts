@@ -10,6 +10,7 @@ import {
   getApplicationById,
   updateApplicationStatus,
   approveApplicationAndUpdateRole,
+  getMyApplication as getMyApplicationService,
 } from './contributor-application.service';
 import { ContributorApplicationModel } from './contributor-application.model';
 
@@ -54,13 +55,79 @@ export const store = async (
 
     await createApplication(application);
 
-    // 返回成功响应
+    // 获取刚创建的申请信息（包含生成的 ID 和时间戳）
+    const newApplication = await getPendingApplicationByUserId(userId);
+
+    // 返回成功响应，包含申请信息，方便前端更新按钮状态
     response.status(201).json({
       success: true,
       message: '申请已提交，等待管理员审核',
+      data: newApplication ? {
+        id: newApplication.id,
+        user_id: newApplication.user_id,
+        status: newApplication.status,
+        created_at: newApplication.created_at,
+        updated_at: newApplication.updated_at,
+      } : null,
     });
   } catch (error) {
     console.error('创建申请失败:', error);
+    next(error);
+  }
+};
+
+/**
+ * 获取当前用户的申请状态
+ * GET /api/contributor-applications/my
+ * 权限：需要登录
+ * 用于前端判断按钮状态
+ */
+export const getMyApplication = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = request.user?.id;
+
+    if (!userId) {
+      return response.status(401).json({
+        success: false,
+        message: '未授权，请先登录',
+        error: 'UNAUTHORIZED',
+      });
+    }
+
+    // 获取当前用户的最新申请（包括所有状态）
+    const application = await getMyApplicationService(userId);
+
+    if (!application) {
+      // 没有申请记录
+      return response.json({
+        success: true,
+        data: null,
+        hasApplication: false,
+        status: null,
+      });
+    }
+
+    // 返回申请信息
+    response.json({
+      success: true,
+      data: {
+        id: application.id,
+        user_id: application.user_id,
+        status: application.status,
+        reviewed_by: application.reviewed_by,
+        reviewed_at: application.reviewed_at,
+        created_at: application.created_at,
+        updated_at: application.updated_at,
+      },
+      hasApplication: true,
+      status: application.status,
+    });
+  } catch (error) {
+    console.error('获取我的申请状态失败:', error);
     next(error);
   }
 };

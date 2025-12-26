@@ -10,6 +10,18 @@ import { adminGuard } from '../auth/admin.middleware';
 const router = express.Router();
 
 /**
+ * 获取当前用户的申请状态
+ * GET /api/contributor-applications/my
+ * 权限：需要登录
+ * 用于前端判断按钮状态（是否有待审核的申请）
+ */
+router.get(
+  '/contributor-applications/my',
+  authGuard, // 需要登录
+  applicationController.getMyApplication,
+);
+
+/**
  * 创建申请
  * POST /api/contributor-applications
  * 权限：需要登录，仅 user 角色可调用
@@ -52,6 +64,31 @@ router.post(
  */
 router.post(
   '/admin/contributor-applications/:id/reject',
+  authGuard, // 需要登录
+  adminGuard, // 仅允许 admin 角色
+  applicationController.reject,
+);
+
+/**
+ * 兼容路由：支持 /admin/contributor-applications 路径（不带 /api 前缀）
+ * 这些路由是为了兼容前端可能直接访问 /admin/* 路径
+ */
+router.get(
+  '/contributor-applications',
+  authGuard, // 需要登录
+  adminGuard, // 仅允许 admin 角色
+  applicationController.getPendingList,
+);
+
+router.post(
+  '/contributor-applications/:id/approve',
+  authGuard, // 需要登录
+  adminGuard, // 仅允许 admin 角色
+  applicationController.approve,
+);
+
+router.post(
+  '/contributor-applications/:id/reject',
   authGuard, // 需要登录
   adminGuard, // 仅允许 admin 角色
   applicationController.reject,

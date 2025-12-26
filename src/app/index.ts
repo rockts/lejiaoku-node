@@ -89,6 +89,7 @@ app.use(currentUser);
      */
     app.use('/admin', userRouter);
     app.use('/admin', resourceRouter);
+    app.use('/admin', contributorApplicationRouter); // Contributor 申请接口（兼容 /admin 路径）
     
     /**
      * Textbook API 路由

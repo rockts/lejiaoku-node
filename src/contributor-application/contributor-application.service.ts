@@ -36,6 +36,23 @@ export const getPendingApplicationByUserId = async (userId: number) => {
 };
 
 /**
+ * 获取当前用户的最新申请（包括所有状态）
+ * 用于前端判断按钮状态
+ */
+export const getMyApplication = async (userId: number) => {
+  const statement = `
+    SELECT *
+    FROM contributor_applications
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+
+  const [data] = await connection.promise().query(statement, [userId]);
+  return (data as any[])[0] || null;
+};
+
+/**
  * 获取所有待审核申请（包含用户信息）
  */
 export const getPendingApplications = async () => {
