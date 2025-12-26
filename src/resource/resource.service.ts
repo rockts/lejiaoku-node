@@ -1,63 +1,245 @@
+/**
+ * 【系统级不变量】教材单元体系规则
+ * 
+ * 1. 「教材单元」唯一合法来源：resource.unit
+ *    - Unit 不是 Tag，不是文本推断结果
+ *    - 禁止任何基于 chapter_info / auto_meta_result.structure 的推断
+ *    - 禁止任何 LIKE / JSON 搜索推断单元
+ * 
+ * 2. Catalog + Unit 是资源筛选的**最小稳定组合**
+ *    - 筛选时：Catalog → Unit → Resource 路径不依赖任何历史字段
+ *    - 如果同时传了 catalog_id 和 unit，必须同时满足，任一缺失 → 不返回数据
+ * 
+ * 3. 教材单元完整性硬约束
+ *    - 凡是已绑定 catalog 的资源，resource.unit 必须非空
+ *    - 在资源创建、编辑、绑定 catalog 时强制校验
+ * 
+ * 4. Catalog → Unit 结构稳定性保证
+ *    - Catalog 章节页展示的 Unit 只能来源于两处之一：
+ *      a. catalog 自身结构（优先）
+ *      b. 已绑定资源的 resource.unit（兜底）
+ *    - 禁止任何基于 chapter_info / auto_meta_result.structure 的前端或后端推断
+ *    - 若 catalog 无结构、且无资源 unit，明确返回"该教材暂无可用单元结构"
+ */
+
 import { connection } from '../app/database/mysql';
 import { ResourceModel } from './resource.model';
 
 /**
  * 获取资源列表
  */
+/**
+ * 【搜索系统规范】排序规则标准化
+ * 
+ * 排序策略（按搜索模式）：
+ * 1. catalog + unit 场景：ORDER BY unit_index ASC, created_at DESC
+ * 2. catalog 场景：ORDER BY unit_index ASC, created_at DESC
+ * 3. keyword 场景：ORDER BY relevance DESC, created_at DESC（relevance 用简单 LIKE 命中数模拟）
+ * 4. 普通列表：ORDER BY created_at DESC
+ */
 export const getResourceList = async (options: {
-  filter?: { name: string; sql: string; params: Array<any> };
+  filter?: { 
+    name: string; 
+    sql: string; 
+    params: Array<any>; 
+    catalogFilters?: any; 
+    unit?: string;
+    keyword?: string;
+    searchMode?: 'catalog_unit' | 'catalog' | 'keyword' | 'default';
+  };
   pagination: { limit: number; offset: number };
 }) => {
   const { filter, pagination } = options;
 
-  // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
-  let sql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
-  const params: Array<any> = [];
+  // 检查是否需要使用 catalog JOIN（教材筛选）
+  const useCatalogJoin = filter && filter.name === 'catalogFilter' && filter.catalogFilters;
+
+  let baseSql = '';
+  let baseParams: Array<any> = [];
 
   if (filter && filter.name === 'adminFilter') {
     // 管理员过滤器，显示所有状态的资源，但仍排除视频
-    sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
-    params.push(...filter.params);
+    baseSql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+    baseParams = [...filter.params];
   } else if (filter && filter.name === 'myResourcesFilter') {
     // 我的资源过滤器，显示用户所有资源，不区分状态，但仍排除视频
-    sql = `resource.user_id = ? AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
-    params.push(...filter.params);
+    baseSql = `resource.user_id = ? AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    baseParams = [...filter.params];
   } else if (filter && filter.sql) {
-    // 其他自定义过滤器
-    sql = `${filter.sql} AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
-    params.push(...filter.params);
+    // 其他自定义过滤器（包括 catalogFilter 的基础条件）
+    baseSql = filter.sql;
+    baseParams = [...filter.params];
+  } else {
+    // 默认：只显示已审核的资源，且排除视频资源
+    baseSql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
   }
 
-  const statement = `
-    SELECT
-      resource.id,
-      resource.title,
-      resource.description,
-      resource.category,
-      resource.subject,
-      resource.grade,
-      resource.textbook,
-      resource.chapter_info,
-      resource.file_format,
-      resource.file_url,
-      resource.cover_url,
-      resource.download_count,
-      resource.status,
-      resource.user_id,
-      resource.auto_meta_status,
-      resource.auto_meta_result,
-      resource.created_at,
-      resource.updated_at
-    FROM resource
-    WHERE ${sql}
-    ORDER BY resource.created_at DESC
-    LIMIT ?
-    OFFSET ?
-  `;
+  let statement: string;
+  let queryParams: Array<any>;
+
+  if (useCatalogJoin) {
+    // 使用 JOIN 结构，基于 catalog 表筛选
+    const catalogFilters = filter.catalogFilters;
+    const catalogConditions: string[] = [];
+    const catalogParams: Array<any> = [];
+
+    // 构建 catalog 筛选条件
+    if (catalogFilters.catalog_id) {
+      catalogConditions.push('c.id = ?');
+      catalogParams.push(catalogFilters.catalog_id);
+    } else {
+      // 如果没有 catalog_id，使用组合参数
+      if (catalogFilters.subject) {
+        catalogConditions.push('c.subject = ?');
+        catalogParams.push(catalogFilters.subject);
+      }
+      if (catalogFilters.grade) {
+        catalogConditions.push('c.grade = ?');
+        catalogParams.push(catalogFilters.grade);
+      }
+      if (catalogFilters.volume) {
+        catalogConditions.push('c.volume = ?');
+        catalogParams.push(catalogFilters.volume);
+      }
+      if (catalogFilters.textbook_version) {
+        catalogConditions.push('c.textbook_version = ?');
+        catalogParams.push(catalogFilters.textbook_version);
+      }
+    }
+
+    // 构建完整的 WHERE 条件
+    let whereClause = baseSql;
+    if (catalogConditions.length > 0) {
+      whereClause += ` AND ${catalogConditions.join(' AND ')}`;
+    }
+
+    // 如果同时有 catalog 和 unit 筛选，必须同时满足
+    if (filter.unit) {
+      whereClause += ' AND r.unit = ?';
+      catalogParams.push(filter.unit);
+    }
+
+    // 【搜索系统规范】排序规则：catalog + unit 或 catalog 场景
+    // ORDER BY unit_index ASC, created_at DESC
+    const orderBy = filter.unit 
+      ? 'r.unit_index ASC, r.created_at DESC'  // catalog + unit 场景
+      : 'r.unit_index ASC, r.created_at DESC'; // catalog 场景（即使没有 unit，也按 unit_index 排序）
+
+    statement = `
+      SELECT DISTINCT
+        r.id,
+        r.title,
+        r.description,
+        r.category,
+        r.subject,
+        r.grade,
+        r.textbook,
+        r.chapter_info,
+        r.unit,
+        r.unit_index,
+        r.file_format,
+        r.file_url,
+        r.cover_url,
+        r.download_count,
+        r.status,
+        r.user_id,
+        r.auto_meta_status,
+        r.auto_meta_result,
+        r.created_at,
+        r.updated_at
+      FROM resource r
+      INNER JOIN resource_textbook_map m ON m.resource_id = r.id
+      INNER JOIN textbook_catalog c ON c.id = m.textbook_catalog_id
+      WHERE ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT ?
+      OFFSET ?
+    `;
+
+    queryParams = [...baseParams, ...catalogParams, pagination.limit, pagination.offset];
+  } else if (filter && filter.name === 'keyword') {
+    // 【搜索系统规范】keyword 场景
+    // 排序规则：ORDER BY relevance DESC, created_at DESC
+    // relevance 用简单 LIKE 命中数模拟（title 命中权重更高）
+    const keyword = filter.keyword || '';
+    const keywordPattern = `%${keyword}%`;
+    
+    statement = `
+      SELECT
+        resource.id,
+        resource.title,
+        resource.description,
+        resource.category,
+        resource.subject,
+        resource.grade,
+        resource.textbook,
+        resource.chapter_info,
+        resource.unit,
+        resource.unit_index,
+        resource.file_format,
+        resource.file_url,
+        resource.cover_url,
+        resource.download_count,
+        resource.status,
+        resource.user_id,
+        resource.auto_meta_status,
+        resource.auto_meta_result,
+        resource.created_at,
+        resource.updated_at,
+        (
+          CASE 
+            WHEN resource.title LIKE ? THEN 2
+            WHEN resource.description LIKE ? THEN 1
+            ELSE 0
+          END
+        ) as relevance
+      FROM resource
+      WHERE ${baseSql}
+      ORDER BY relevance DESC, resource.created_at DESC
+      LIMIT ?
+      OFFSET ?
+    `;
+
+    queryParams = [...baseParams, keywordPattern, keywordPattern, pagination.limit, pagination.offset];
+  } else {
+    // 【搜索系统规范】普通列表场景
+    // 排序规则：ORDER BY created_at DESC
+    // 注意：unit 筛选已经在 middleware 中添加到 baseSql 中
+    statement = `
+      SELECT
+        resource.id,
+        resource.title,
+        resource.description,
+        resource.category,
+        resource.subject,
+        resource.grade,
+        resource.textbook,
+        resource.chapter_info,
+        resource.unit,
+        resource.unit_index,
+        resource.file_format,
+        resource.file_url,
+        resource.cover_url,
+        resource.download_count,
+        resource.status,
+        resource.user_id,
+        resource.auto_meta_status,
+        resource.auto_meta_result,
+        resource.created_at,
+        resource.updated_at
+      FROM resource
+      WHERE ${baseSql}
+      ORDER BY resource.created_at DESC
+      LIMIT ?
+      OFFSET ?
+    `;
+
+    queryParams = [...baseParams, pagination.limit, pagination.offset];
+  }
 
   const [data] = await connection
     .promise()
-    .query(statement, [...params, pagination.limit, pagination.offset]);
+    .query(statement, queryParams);
 
   return data;
 };
@@ -66,35 +248,101 @@ export const getResourceList = async (options: {
  * 获取资源总数
  */
 export const getResourceTotalCount = async (options: {
-  filter?: { name: string; sql: string; params: Array<any> };
+  filter?: { 
+    name: string; 
+    sql: string; 
+    params: Array<any>; 
+    catalogFilters?: any; 
+    unit?: string;
+    keyword?: string;
+    searchMode?: 'catalog_unit' | 'catalog' | 'keyword' | 'default';
+  };
 }) => {
   const { filter } = options;
 
-  // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
-  let sql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
-  const params: Array<any> = [];
+  // 检查是否需要使用 catalog JOIN（教材筛选）
+  const useCatalogJoin = filter && filter.name === 'catalogFilter' && filter.catalogFilters;
+
+  let baseSql = '';
+  let baseParams: Array<any> = [];
 
   if (filter && filter.name === 'adminFilter') {
     // 管理员过滤器，显示所有状态的资源，但仍排除视频
-    sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
-    params.push(...filter.params);
+    baseSql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+    baseParams = [...filter.params];
   } else if (filter && filter.name === 'myResourcesFilter') {
     // 我的资源过滤器，显示用户所有资源，不区分状态，但仍排除视频
-    sql = `resource.user_id = ? AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
-    params.push(...filter.params);
+    baseSql = `resource.user_id = ? AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    baseParams = [...filter.params];
   } else if (filter && filter.sql) {
-    // 其他自定义过滤器
-    sql = `${filter.sql} AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
-    params.push(...filter.params);
+    // 其他自定义过滤器（包括 catalogFilter 的基础条件）
+    baseSql = filter.sql;
+    baseParams = [...filter.params];
+  } else {
+    // 默认：只显示已审核的资源，且排除视频资源
+    baseSql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
   }
 
-  const statement = `
-    SELECT COUNT(*) as total
-    FROM resource
-    WHERE ${sql}
-  `;
+  let statement: string;
+  let queryParams: Array<any>;
 
-  const [data] = await connection.promise().query(statement, params);
+  if (useCatalogJoin) {
+    // 使用 JOIN 结构，基于 catalog 表筛选
+    const catalogFilters = filter.catalogFilters;
+    const catalogConditions: string[] = [];
+    const catalogParams: Array<any> = [];
+
+    // 构建 catalog 筛选条件
+    if (catalogFilters.subject) {
+      catalogConditions.push('c.subject = ?');
+      catalogParams.push(catalogFilters.subject);
+    }
+    if (catalogFilters.grade) {
+      catalogConditions.push('c.grade = ?');
+      catalogParams.push(catalogFilters.grade);
+    }
+    if (catalogFilters.volume) {
+      catalogConditions.push('c.volume = ?');
+      catalogParams.push(catalogFilters.volume);
+    }
+    if (catalogFilters.textbook_version) {
+      catalogConditions.push('c.textbook_version = ?');
+      catalogParams.push(catalogFilters.textbook_version);
+    }
+
+    // 构建完整的 WHERE 条件
+    let whereClause = baseSql;
+    if (catalogConditions.length > 0) {
+      whereClause += ` AND ${catalogConditions.join(' AND ')}`;
+    }
+
+    // 如果同时有 catalog 和 unit 筛选，必须同时满足
+    if (filter.unit) {
+      whereClause += ' AND r.unit = ?';
+      catalogParams.push(filter.unit);
+    }
+
+    statement = `
+      SELECT COUNT(DISTINCT r.id) as total
+      FROM resource r
+      INNER JOIN resource_textbook_map m ON m.resource_id = r.id
+      INNER JOIN textbook_catalog c ON c.id = m.textbook_catalog_id
+      WHERE ${whereClause}
+    `;
+
+    queryParams = [...baseParams, ...catalogParams];
+  } else {
+    // 普通查询，不使用 JOIN
+    statement = `
+      SELECT COUNT(*) as total
+      FROM resource
+      WHERE ${baseSql}
+    `;
+
+    queryParams = baseParams;
+  }
+
+  const [data] = await connection.promise().query(statement, queryParams);
 
   return (data as any)[0].total;
 };
@@ -123,6 +371,8 @@ export const getResourceById = async (resourceId: number) => {
       resource.grade,
       resource.textbook,
       resource.chapter_info,
+      resource.unit,
+      resource.unit_index,
       resource.file_format,
       resource.file_url,
       resource.cover_url,
@@ -158,6 +408,8 @@ export const getResourceByIdForAdmin = async (resourceId: number) => {
       resource.grade,
       resource.textbook,
       resource.chapter_info,
+      resource.unit,
+      resource.unit_index,
       resource.file_format,
       resource.file_url,
       resource.cover_url,

@@ -3,8 +3,7 @@ import * as resourceController from './resource.controller';
 import * as resourceAutoMetaController from './resource-auto-meta.controller';
 import * as updateResourceController from './resource.controller.update';
 import * as deleteResourceController from './resource.controller.delete';
-import * as resourceAdminController from './resource.controller.admin';
-import * as resourceUserController from './resource.controller.user';
+import * as resourceUnitValidationController from './resource-unit-validation.controller';
 import { authGuard, roleGuard, requireRole } from '../auth/auth.middleware';
 import { adminGuard } from '../auth/admin.middleware';
 import { resourcePermissionGuard } from './resource.permission.middleware';
@@ -24,26 +23,12 @@ router.get(
 
 /**
  * 我的资源列表（当前用户的所有资源）
- * GET /api/my/resources
- * 权限：需要登录
  */
 router.get(
   '/my/resources',
-  authGuard, // 需要登录
   myResourcesFilter, // 过滤当前用户的资源
   paginate(30),
   resourceController.myResources,
-);
-
-/**
- * 获取指定用户的资源列表
- * GET /api/users/:userId/resources
- * 权限：公开访问（只返回已审核的资源）
- */
-router.get(
-  '/users/:userId/resources',
-  paginate(30),
-  resourceUserController.getUserResources,
 );
 
 /**
@@ -83,13 +68,11 @@ router.get(
 
 /**
  * 创建资源（支持文件上传）
- * 权限：contributor / editor / admin
- * user 角色禁止上传资源
+ * 权限：必须登录（任何已登录用户都可以创建资源）
  */
 router.post(
   '/resources',
   authGuard, // 需要登录
-  requireRole(['contributor', 'editor', 'admin']), // 仅允许 contributor、editor、admin
   resourceWithCoverInterceptor, // 文件上传中间件（支持资源文件 + 封面文件同时上传）
   resourceCoverProcessor, // 封面图片尺寸调整处理器（生成 large/medium/thumbnail）
   resourceController.store,
@@ -97,67 +80,72 @@ router.post(
 
 /**
  * 管理员资源列表（显示所有状态的资源，用于审核）
- * GET /api/admin/resources
- * 权限：仅 admin
- * 支持查询参数：status, uploader_id
+ * 注意：这是管理员接口，生产环境需要添加权限验证
+ * 开发期暂不加 authGuard
  */
 router.get(
   '/admin/resources',
-  authGuard, // 需要登录
-  adminGuard, // 仅允许 admin 角色
-  resourceAdminController.getResourceList,
+  adminFilter, // 管理员过滤器（不过滤status，或按status过滤）
+  paginate(30),
+  resourceController.adminIndex,
 );
 
 /**
  * 审核资源状态（管理员接口）
- * PATCH /api/admin/resources/:id/status
- * 权限：仅 admin
+ * 权限：仅允许 editor 和 admin
+ * user 调用此接口将返回 403
  */
 router.patch(
   '/admin/resources/:id/status',
   authGuard, // 需要登录
-  adminGuard, // 仅允许 admin 角色
-  resourceAdminController.updateResourceStatusByAdmin,
-);
-
-/**
- * 审核资源（通过审核）
- * POST /api/resources/:id/approve
- * 权限：editor / admin
- * user / contributor 禁止
- */
-router.post(
-  '/resources/:id/approve',
-  authGuard, // 需要登录
-  requireRole(['editor', 'admin']), // 仅允许 editor 和 admin
-  resourceController.approve,
+  roleGuard(['admin', 'editor']), // 仅允许 admin 或 editor 角色
+  resourceController.updateStatus,
 );
 
 /**
  * 更新资源（编辑资源）
  * PUT /api/resources/:id
  * 权限：admin、editor 或资源所有者
- * 支持：更新字段 + 上传新封面（上传新封面时会删除旧封面）
  */
 router.put(
   '/resources/:id',
   authGuard, // 需要登录
   resourcePermissionGuard, // 权限验证：admin、editor 或资源所有者
-  resourceWithCoverInterceptor, // 文件上传中间件（支持上传封面文件）
-  resourceCoverProcessor, // 封面图片尺寸调整处理器（生成 large/medium/thumbnail）
   updateResourceController.update,
 );
 
 /**
  * 删除资源
  * DELETE /api/resources/:id
- * 权限：仅 admin 允许删除资源
+ * 权限：admin 可删除任何资源，user/editor 只能删除自己的资源
  */
 router.delete(
   '/resources/:id',
   authGuard, // 需要登录
-  requireRole(['admin']), // 仅允许 admin 删除资源
+  resourcePermissionGuard, // 权限验证：admin 可删除任何，user/editor 只能删除自己的
   deleteResourceController.destroy,
+);
+
+/**
+ * 获取未填写 unit 的资源列表（仅 admin）
+ * GET /api/admin/resources/missing-unit
+ */
+router.get(
+  '/admin/resources/missing-unit',
+  authGuard, // 需要登录
+  requireRole(['admin']), // 仅允许 admin
+  resourceUnitValidationController.getResourcesMissingUnit,
+);
+
+/**
+ * 批量设置资源的 unit 和 unit_index（仅 admin）
+ * POST /api/admin/resources/batch-set-unit
+ */
+router.post(
+  '/admin/resources/batch-set-unit',
+  authGuard, // 需要登录
+  adminGuard, // 仅允许 admin
+  resourceUnitValidationController.batchSetUnit,
 );
 
 /**

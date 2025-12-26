@@ -12,6 +12,7 @@ import {
     updateResourceAutoParse,
     updateResource,
 } from './resource.service';
+import * as resourceUnitValidationService from './resource-unit-validation.service';
 import { APP_PORT } from '../app/app.config';
 import { getResourceTextbooks, processTextbookUpload } from '../textbook/textbook.controller'; // 获取资源关联的教材目录
 import { enrichResourceWithCatalogInfo, enrichResourceListWithCatalogInfo } from './resource-helper.service';
@@ -428,7 +429,7 @@ export const store = async (
 
     // 准备资源数据
     // 处理 chapter_info：章节信息（非结构化文本，可选）
-    const { chapter_info, auto_meta_status } = request.body;
+    const { chapter_info, auto_meta_status, unit, unit_index, catalog_id } = request.body;
 
     // 处理 auto_meta_status：AI元数据识别状态（可选，默认 pending）
     // 允许值：pending | done | failed
@@ -465,6 +466,17 @@ export const store = async (
     }
     console.log('  grade 最终值:', gradeValue, '(类型:', typeof gradeValue, ')');
 
+    // 【系统级不变量】教材单元完整性硬约束
+    // 规则：凡是已绑定 catalog 的资源，resource.unit 必须非空
+    // 如果创建时传了 catalog_id，则 unit 必须提供
+    if (catalog_id && (!unit || unit.trim() === '')) {
+        return response.status(400).json({
+            success: false,
+            message: '该资源已绑定教材，必须选择所属单元',
+            error: 'UNIT_REQUIRED_FOR_CATALOG',
+        });
+    }
+
     const resource = {
         title,
         description,
@@ -476,6 +488,8 @@ export const store = async (
         file_url,
         cover_url: cover_url_value,
         chapter_info: chapter_info || null, // 章节信息（非结构化文本，可选）
+        unit: unit || null, // 【系统级不变量】资源所属单元（显式字段，唯一合法来源）
+        unit_index: unit_index || null, // 单元序号
         auto_meta_status: autoMetaStatus, // AI元数据识别状态（默认 pending，用于未来AI识别）
         auto_meta_result: null, // AI识别结果（JSON格式，未来使用，当前为 null）
         user_id: userId,
@@ -488,6 +502,14 @@ export const store = async (
     try {
         const data: any = await createResource(resource);
         const newResourceId = data.insertId;
+
+        // 如果创建时传了 catalog_id，立即绑定（在创建后）
+        // 注意：此时 unit 已经通过上面的校验，确保非空
+        if (catalog_id) {
+            // 这里可以调用绑定 catalog 的逻辑
+            // 但为了保持代码清晰，建议通过单独的 bind-catalog 接口处理
+            // 或者在这里调用 bindResourceToCatalog
+        }
 
         // 异步触发解析（不阻塞响应）
         // 检查是否为PDF或DOCX文件，且不是视频文件

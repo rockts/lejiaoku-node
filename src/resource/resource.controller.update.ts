@@ -8,6 +8,7 @@ import { getResourceByIdForAdmin, updateResource } from './resource.service';
 import { enrichResourceWithCatalogInfo } from './resource-helper.service';
 import { getFullUrl } from './resource.controller';
 import { bindResourceToCatalogByAutoMeta } from '../textbook/textbook.service';
+import * as resourceUnitValidationService from './resource-unit-validation.service';
 import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
@@ -144,7 +145,25 @@ export const update = async (
       textbook,
       chapter_info,
       cover_url,
+      unit,
+      unit_index,
     } = request.body;
+
+    // 【系统级不变量】教材单元完整性硬约束
+    // 规则：凡是已绑定 catalog 的资源，resource.unit 必须非空
+    const isBoundToCatalog = await resourceUnitValidationService.isResourceBoundToCatalog(resourceId);
+    
+    // 如果资源已绑定 catalog，且更新后 unit 为空，则拒绝
+    if (isBoundToCatalog) {
+      const newUnit = unit !== undefined ? unit : existingResource.unit;
+      if (!newUnit || (typeof newUnit === 'string' && newUnit.trim() === '')) {
+        return response.status(400).json({
+          success: false,
+          message: '该资源已绑定教材，必须选择所属单元',
+          error: 'UNIT_REQUIRED_FOR_CATALOG',
+        });
+      }
+    }
 
     // 构建更新对象（只包含提供的字段）
     const updates: any = {};
@@ -155,6 +174,8 @@ export const update = async (
     if (grade !== undefined) updates.grade = grade;
     if (textbook !== undefined) updates.textbook = textbook;
     if (chapter_info !== undefined) updates.chapter_info = chapter_info;
+    if (unit !== undefined) updates.unit = unit; // 【系统级不变量】资源所属单元（显式字段，唯一合法来源）
+    if (unit_index !== undefined) updates.unit_index = unit_index;
     
     // 优先使用上传的新封面，否则使用 cover_url（如果提供）
     if (newCoverUrl) {

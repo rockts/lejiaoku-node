@@ -380,13 +380,23 @@ export const resourceCoverProcessor = async (
 };
 
 /**
- * 过滤列表（根据用户角色和权限显示不同状态的资源）
- * 支持搜索参数：grade, subject, textbook_version, volume, chapter_keyword
+ * 【搜索系统规范】过滤列表（根据用户角色和权限显示不同状态的资源）
+ * 
+ * 搜索优先级规则（严格按以下顺序，不可调整）：
+ * 1. catalog_id + unit（最高优先级）
+ * 2. catalog_id（通过 subject/grade/volume/textbook_version 组合）
+ * 3. keyword（仅搜索 title/description，禁止参与教材语义判断）
+ * 4. 普通资源列表（无任何条件）
  * 
  * 权限规则：
- * - 管理员（admin/editor）：可查看所有资源（通过、拒绝、未审核）
+ * - 管理员（admin/editor）：可查看所有状态的资源（通过、拒绝、未审核）
  * - 发布者：可查看自己发布的资源（所有状态）
  * - 其他用户：只能查看已通过审核的资源
+ * 
+ * 【历史废弃路径（DO NOT USE）】：
+ * - chapter_keyword - 已废弃，禁止使用
+ * - chapter_info LIKE - 已废弃，禁止使用
+ * - auto_meta_result.structure 搜索 - 已废弃，禁止使用
  */
 export const filter = async (
   request: Request,
@@ -394,7 +404,7 @@ export const filter = async (
   next: NextFunction,
 ) => {
   // 解构查询参数
-  const { keyword, category, subject, grade, textbook, textbook_version, volume, chapter_keyword } = request.query;
+  const { keyword, category, subject, grade, textbook, textbook_version, volume, unit, catalog_id } = request.query;
 
   // 获取当前用户信息
   const userId = request.user?.id;
@@ -433,7 +443,12 @@ export const filter = async (
     sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
   }
 
-  // 按关键词过滤（搜索标题和描述）
+  // 【搜索系统规范】关键词搜索
+  // 规则：关键词搜索严格限定在 resource.title 和 resource.description
+  // 【历史废弃路径（DO NOT USE）】：
+  //   - chapter_keyword - 已废弃，禁止使用
+  //   - chapter_info LIKE - 已废弃，禁止使用
+  //   - auto_meta_result.structure 搜索 - 已废弃，禁止使用
   if (keyword) {
     sql += ' AND (resource.title LIKE ? OR resource.description LIKE ?)';
     const keywordPattern = `%${keyword}%`;
@@ -446,55 +461,60 @@ export const filter = async (
     params.push(category);
   }
 
-  // 按学科过滤
-  if (subject) {
-    sql += ' AND resource.subject = ?';
-    params.push(subject);
-  }
-
-  // 按年级过滤（支持字符串格式，如"二年级"）
-  if (grade) {
-    sql += ' AND resource.grade LIKE ?';
-    const gradePattern = `%${grade}%`;
-    params.push(gradePattern);
-  }
-
-  // 按教材版本过滤（兼容 textbook 和 textbook_version）
-  const version = textbook_version || textbook;
-  if (version) {
-    sql += ' AND resource.textbook = ?';
-    params.push(version);
-  }
-
-  // 按册次过滤（volume）
-  if (volume) {
-    sql += ' AND resource.grade LIKE ?';
-    const volumePattern = `%${volume}%`;
-    params.push(volumePattern);
-  }
-
-  // 按章节关键词过滤（搜索 chapter_info 或 auto_meta_result.structure.title）
-  // 注意：由于 auto_meta_result 是 JSON 字段，需要使用 JSON 函数进行搜索
-  if (chapter_keyword) {
-    const chapterPattern = `%${chapter_keyword}%`;
-    // 搜索 chapter_info 字段
-    sql += ' AND (resource.chapter_info LIKE ?';
-    params.push(chapterPattern);
-    // 搜索 auto_meta_result JSON 字段中的 structure（使用 JSON_SEARCH 更可靠）
-    sql += ' OR JSON_SEARCH(resource.auto_meta_result, "one", ?, NULL, "$.structure[*].title") IS NOT NULL';
-    params.push(chapterPattern);
-    sql += ' OR JSON_SEARCH(resource.auto_meta_result, "one", ?, NULL, "$.structure[*].unit") IS NOT NULL';
-    params.push(chapterPattern);
-    sql += ' OR JSON_SEARCH(resource.auto_meta_result, "one", ?, NULL, "$.structure[*]") IS NOT NULL)';
-    params.push(chapterPattern);
+  // 【搜索系统规范】搜索优先级判定
+  // 优先级 1: catalog_id + unit（最高优先级）
+  // 优先级 2: catalog_id（通过 subject/grade/volume/textbook_version 组合）
+  // 优先级 3: keyword（仅搜索 title/description）
+  // 优先级 4: 普通资源列表（无任何条件）
+  
+  // 检测是否有 catalog 筛选参数
+  const hasCatalogFilter = !!(subject || grade || volume || textbook_version || textbook || catalog_id);
+  const hasUnit = !!unit;
+  
+  // 按单元筛选（只使用 resource.unit 字段，禁止使用 chapter_info 或 auto_meta_result）
+  // 【历史废弃路径（DO NOT USE）】：chapter_info LIKE, auto_meta_result.structure 搜索已废弃
+  if (hasUnit) {
+    sql += ' AND resource.unit = ?';
+    params.push(unit);
   }
 
   // 设置请求中的过滤
-  request.filter = {
-    name: 'default',
-    sql: sql,
-    params: params,
-  };
+  if (hasCatalogFilter) {
+    // 优先级 1 或 2: 有 catalog 筛选，标记需要 JOIN catalog 表
+    // 筛选条件将在 service 层基于 catalog 表构建
+    request.filter = {
+      name: 'catalogFilter',
+      sql: sql, // 基础条件（status, category, keyword, unit 等）
+      params: params,
+      catalogFilters: {
+        subject: subject as string | undefined,
+        grade: grade as string | undefined,
+        volume: volume as string | undefined,
+        textbook_version: (textbook_version || textbook) as string | undefined,
+        catalog_id: catalog_id as string | undefined,
+      },
+      unit: unit as string | undefined, // 单元筛选参数
+      keyword: keyword as string | undefined, // 关键词（如果存在，在 catalog 筛选下会被忽略）
+      searchMode: hasUnit ? 'catalog_unit' : 'catalog', // 搜索模式标识
+    };
+  } else if (keyword) {
+    // 优先级 3: 只有 keyword，没有 catalog 筛选
+    request.filter = {
+      name: 'keyword',
+      sql: sql,
+      params: params,
+      keyword: keyword as string | undefined,
+      searchMode: 'keyword',
+    };
+  } else {
+    // 优先级 4: 普通资源列表（无任何条件）
+    request.filter = {
+      name: 'default',
+      sql: sql,
+      params: params,
+      searchMode: 'default',
+    };
+  }
 
   // 下一步
   next();
@@ -509,10 +529,10 @@ export const adminFilter = async (
   next: NextFunction,
 ) => {
   // 解构查询参数
-  const { keyword, category, subject, grade, textbook, status } = request.query;
+  const { keyword, category, subject, grade, textbook, textbook_version, volume, unit, status } = request.query;
 
   // 设置默认的过滤（显示所有状态，或按status过滤）
-  let sql = '1 = 1'; // 不过滤status
+  let sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
   const params: Array<any> = [];
 
   // 如果指定了status，则按status过滤
@@ -521,7 +541,12 @@ export const adminFilter = async (
     params.push(status);
   }
 
-  // 按关键词过滤（搜索标题和描述）
+  // 【搜索系统规范】关键词搜索
+  // 规则：关键词搜索严格限定在 resource.title 和 resource.description
+  // 【历史废弃路径（DO NOT USE）】：
+  //   - chapter_keyword - 已废弃，禁止使用
+  //   - chapter_info LIKE - 已废弃，禁止使用
+  //   - auto_meta_result.structure 搜索 - 已废弃，禁止使用
   if (keyword) {
     sql += ' AND (resource.title LIKE ? OR resource.description LIKE ?)';
     const keywordPattern = `%${keyword}%`;
@@ -534,30 +559,40 @@ export const adminFilter = async (
     params.push(category);
   }
 
-  // 按学科过滤
-  if (subject) {
-    sql += ' AND resource.subject = ?';
-    params.push(subject);
+  // 按单元筛选（只使用 resource.unit 字段）
+  if (unit) {
+    sql += ' AND resource.unit = ?';
+    params.push(unit);
   }
 
-  // 按年级过滤
-  if (grade) {
-    sql += ' AND resource.grade = ?';
-    params.push(parseInt(grade as string, 10));
-  }
-
-  // 按教材版本过滤
-  if (textbook) {
-    sql += ' AND resource.textbook = ?';
-    params.push(textbook);
-  }
+  // 教材筛选：只基于 catalog（教材目录），禁止使用 resource 原始字段
+  // 如果传了任何教材筛选参数，必须使用 JOIN 结构，未绑定 catalog 的资源将被排除
+  const hasCatalogFilter = !!(subject || grade || volume || textbook_version || textbook);
 
   // 设置请求中的过滤
-  request.filter = {
-    name: 'admin',
-    sql: sql,
-    params: params,
-  };
+  if (hasCatalogFilter) {
+    // 标记需要 JOIN catalog 表，筛选条件将在 service 层基于 catalog 表构建
+    request.filter = {
+      name: 'catalogFilter',
+      sql: sql, // 基础条件（status, category, keyword, unit 等）
+      params: params,
+      catalogFilters: {
+        subject: subject as string | undefined,
+        grade: grade as string | undefined,
+        volume: volume as string | undefined,
+        textbook_version: (textbook_version || textbook) as string | undefined,
+      },
+      unit: unit as string | undefined, // 单元筛选参数
+    };
+  } else {
+    // 没有教材筛选参数，使用普通查询
+    request.filter = {
+      name: 'adminFilter',
+      sql: sql,
+      params: params,
+      unit: unit as string | undefined, // 单元筛选参数
+    };
+  }
 
   // 下一步
   next();
