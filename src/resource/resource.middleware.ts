@@ -380,8 +380,13 @@ export const resourceCoverProcessor = async (
 };
 
 /**
- * 过滤列表（普通用户，只显示已审核的资源）
+ * 过滤列表（根据用户角色和权限显示不同状态的资源）
  * 支持搜索参数：grade, subject, textbook_version, volume, chapter_keyword
+ * 
+ * 权限规则：
+ * - 管理员（admin/editor）：可查看所有资源（通过、拒绝、未审核）
+ * - 发布者：可查看自己发布的资源（所有状态）
+ * - 其他用户：只能查看已通过审核的资源
  */
 export const filter = async (
   request: Request,
@@ -391,9 +396,42 @@ export const filter = async (
   // 解构查询参数
   const { keyword, category, subject, grade, textbook, textbook_version, volume, chapter_keyword } = request.query;
 
-  // 设置默认的过滤（只显示已审核的资源，且排除视频资源）
-  let sql = 'resource.status = "approved" AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+  // 获取当前用户信息
+  const userId = request.user?.id;
+  const userRole = (request.user as any)?.role || 'user';
+
+  // 根据用户角色和权限构建状态过滤条件
+  // 规则：
+  // 1. 管理员/编辑：可查看所有状态的资源
+  // 2. 普通用户（包括 contributor）：只能查看已审核的资源（approved）
+  //    注意：资源列表统一只显示已审核的资源，确保所有人看到的列表一致
+  //    用户可以通过 /api/my/resources 查看自己发布的所有资源
+  let statusCondition = '';
+  if (userRole === 'admin' || userRole === 'editor') {
+    // 管理员和编辑：可查看所有状态的资源
+    statusCondition = '';
+  } else {
+    // 所有其他用户（包括 contributor、user、未登录）：只能查看已审核的资源
+    // 这样确保资源列表和详情接口的一致性：列表显示的资源，详情也可以访问
+    statusCondition = 'resource.status = "approved"';
+  }
+
+  // 设置默认的过滤（根据权限显示不同状态的资源，且排除视频资源）
+  let sql = '';
   const params: Array<any> = [];
+
+  if (statusCondition) {
+    if (statusCondition.includes('?')) {
+      // 如果包含占位符，需要添加 userId 参数
+      sql = `${statusCondition} AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+      params.push(userId);
+    } else {
+      sql = `${statusCondition} AND resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")`;
+    }
+  } else {
+    // 管理员/编辑：不限制状态
+    sql = 'resource.file_format NOT IN ("视频", "VIDEO") AND resource.category NOT IN ("视频")';
+  }
 
   // 按关键词过滤（搜索标题和描述）
   if (keyword) {

@@ -236,10 +236,45 @@ export const show = async (
 ) => {
     // 准备数据
     const { id } = request.params;
+    const resourceId = parseInt(id, 10);
 
-    // 获取资源（仅返回已审核的资源，status 字段不返回）
+    // 获取当前用户信息
+    const userId = request.user?.id;
+    const userRole = (request.user as any)?.role || 'user';
+
     try {
-        const resource: any = await getResourceById(parseInt(id, 10));
+        // 先获取资源（不限制状态，用于权限检查）
+        const { getResourceByIdForAdmin } = await import('./resource.service');
+        let resource: any;
+        
+        try {
+            resource = await getResourceByIdForAdmin(resourceId);
+        } catch (error) {
+            // 如果资源不存在，返回 404
+            return response.status(404).json({
+                success: false,
+                message: '资源不存在',
+                error: 'NOT_FOUND',
+            });
+        }
+
+        // 权限检查：根据用户角色和是否是资源所有者决定是否允许查看
+        const isAdminOrEditor = userRole === 'admin' || userRole === 'editor';
+        const isOwner = userId && resource.user_id === userId;
+        const isApproved = resource.status === 'approved';
+
+        // 权限规则：
+        // 1. 管理员/编辑：可查看所有资源
+        // 2. 发布者：可查看自己发布的资源（所有状态）
+        // 3. 其他用户：只能查看已通过审核的资源
+        if (!isAdminOrEditor && !isOwner && !isApproved) {
+            return response.status(403).json({
+                success: false,
+                message: '您没有权限查看此资源',
+                error: 'FORBIDDEN',
+            });
+        }
+
         // 将 file_url 转换为完整 URL（如果需要）
         if (resource && resource.file_url && resource.file_url.startsWith('/')) {
             resource.file_url = getFullUrl(request, resource.file_url);
@@ -247,6 +282,11 @@ export const show = async (
         // 将 cover_url 转换为完整 URL（如果需要）
         if (resource && resource.cover_url && resource.cover_url.startsWith('/')) {
             resource.cover_url = getFullUrl(request, resource.cover_url);
+        }
+
+        // 对于非管理员/编辑/发布者，不返回 status 字段（保持向后兼容）
+        if (!isAdminOrEditor && !isOwner) {
+            delete resource.status;
         }
 
         // 附加教材信息（如果已绑定）
