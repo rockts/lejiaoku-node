@@ -294,3 +294,4 @@ curl -X DELETE http://localhost:3333/api/resources/1 \
 4. **Owner 校验仅对 `contributor` 角色生效**，`editor` 和 `admin` 可以操作任意资源
 5. **删除资源仅允许 `admin` 角色**，其他角色一律禁止
 
+

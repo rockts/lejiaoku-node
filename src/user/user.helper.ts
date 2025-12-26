@@ -45,3 +45,4 @@ export const enrichUserListWithAvatarUrl = (users: any[]): any[] => {
   return users.map(user => enrichUserWithAvatarUrl(user));
 };
 
+

@@ -450,3 +450,4 @@ CREATE TABLE `contributor_applications` (
 6. **审核通过申请是原子操作**，使用事务确保申请状态和用户角色同时更新
 7. **每个用户只能有一个 `pending` 状态的申请**，通过数据库唯一索引保证
 
+

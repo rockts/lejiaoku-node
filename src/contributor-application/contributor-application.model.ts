@@ -12,3 +12,4 @@ export class ContributorApplicationModel {
   updated_at?: Date; // 更新时间
 }
 
+
