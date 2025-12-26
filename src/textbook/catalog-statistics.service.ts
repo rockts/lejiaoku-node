@@ -29,6 +29,21 @@ import { connection } from '../app/database/mysql';
 export type CatalogQualityState = 'healthy' | 'needs_content' | 'needs_organization' | 'empty';
 
 /**
+ * Catalog 行动类型枚举
+ * 
+ * 【系统级不变量】Catalog 行动规则：
+ * - Action 是派生的而不是存储的（可重复计算）
+ * - Quality ≠ Action
+ * - Action 是系统与人的接口
+ * - 系统不会"要求人做事"，只会"指出最有价值的地方"
+ */
+export type CatalogActionType = 
+  | 'organize_units'      // 需要整理单元
+  | 'add_resources'       // 需要补充资源
+  | 'prioritize_upload'   // 优先上传
+  | 'no_action';          // 无需行动
+
+/**
  * 计算 Catalog 质量状态
  * 
  * 状态判定规则（严格）：
@@ -99,6 +114,61 @@ export const calculateCatalogQualityState = async (
 };
 
 /**
+ * 计算 Catalog 行动类型和建议
+ * 
+ * 映射规则（严格）：
+ * 1. empty → add_resources（该教材完全没有内容）
+ * 2. needs_organization → organize_units（已有资源但 unit 缺失）
+ * 3. needs_content → add_resources（unit 已有但资源密度不足）
+ * 4. healthy → no_action（无需行动）
+ * 
+ * 注意：Action 是派生的而不是存储的（可重复计算）
+ */
+export const calculateCatalogAction = async (
+  catalogId: number,
+  qualityState: CatalogQualityState,
+  qualityReasons: string[],
+): Promise<{ action_type: CatalogActionType; action_reason: string[]; suggested_units?: string[] }> => {
+  // 1. empty → add_resources
+  if (qualityState === 'empty') {
+    return {
+      action_type: 'add_resources',
+      action_reason: ['该教材完全没有内容，需要补充资源'],
+    };
+  }
+
+  // 2. needs_organization → organize_units
+  if (qualityState === 'needs_organization') {
+    return {
+      action_type: 'organize_units',
+      action_reason: qualityReasons.map(r => r.replace('resource', '资源').replace('missing unit', '缺少单元')),
+    };
+  }
+
+  // 3. needs_content → add_resources
+  if (qualityState === 'needs_content') {
+    // 获取 unit 统计，找出资源不足的 unit
+    const unitStats = await getCatalogUnitStatistics(catalogId);
+    const unitsNeedingResources = unitStats
+      .filter((u: any) => u.resource_count <= 1 && u.unit)
+      .map((u: any) => u.unit)
+      .slice(0, 5); // 最多返回 5 个建议的 unit
+
+    return {
+      action_type: 'add_resources',
+      action_reason: qualityReasons.map(r => r.replace('unit', '单元').replace('resource', '资源')),
+      suggested_units: unitsNeedingResources.length > 0 ? unitsNeedingResources : undefined,
+    };
+  }
+
+  // 4. healthy → no_action
+  return {
+    action_type: 'no_action',
+    action_reason: ['该教材内容充足，无需行动'],
+  };
+};
+
+/**
  * 获取所有 catalog 的统计信息
  * 返回每个 catalog 的聚合信息（包含质量状态）
  * 
@@ -127,8 +197,8 @@ export const getCatalogStatistics = async () => {
   const [data] = await connection.promise().query(statement);
   const catalogs = data as any[];
 
-  // 为每个 catalog 计算质量状态
-  const catalogsWithQuality = await Promise.all(
+  // 为每个 catalog 计算质量状态和行动建议
+  const catalogsWithQualityAndAction = await Promise.all(
     catalogs.map(async (catalog) => {
       const quality = await calculateCatalogQualityState(
         catalog.catalog_id,
@@ -136,15 +206,23 @@ export const getCatalogStatistics = async () => {
         catalog.unit_total || 0,
         catalog.resource_pending_unit || 0,
       );
+      const action = await calculateCatalogAction(
+        catalog.catalog_id,
+        quality.state,
+        quality.reasons,
+      );
       return {
         ...catalog,
         quality_state: quality.state,
         quality_reason: quality.reasons,
+        action_type: action.action_type,
+        action_reason: action.action_reason,
+        suggested_units: action.suggested_units,
       };
     }),
   );
 
-  return catalogsWithQuality;
+  return catalogsWithQualityAndAction;
 };
 
 /**
@@ -221,6 +299,13 @@ export const getCatalogQualityDiagnosis = async (catalogId: number) => {
     stats.resource_pending_unit || 0,
   );
 
+  // 计算行动建议
+  const action = await calculateCatalogAction(
+    catalogId,
+    quality.state,
+    quality.reasons,
+  );
+
   // 获取 unit 统计
   const unitStatistics = await getCatalogUnitStatistics(catalogId);
 
@@ -232,7 +317,40 @@ export const getCatalogQualityDiagnosis = async (catalogId: number) => {
     last_resource_created_at: stats.last_resource_created_at,
     quality_state: quality.state,
     quality_reason: quality.reasons,
+    action_type: action.action_type,
+    action_reason: action.action_reason,
+    suggested_units: action.suggested_units,
     unit_statistics: unitStatistics,
   };
+};
+
+/**
+ * 获取待行动的 Catalog 列表
+ * 仅返回 action_type != no_action 的 catalog
+ * 按优先级排序：empty > needs_organization > needs_content
+ */
+export const getCatalogActions = async () => {
+  // 获取所有 catalog 统计（包含质量状态和行动建议）
+  const allCatalogs = await getCatalogStatistics();
+
+  // 过滤出需要行动的 catalog
+  const catalogsNeedingAction = allCatalogs.filter(
+    (catalog: any) => catalog.action_type !== 'no_action',
+  );
+
+  // 按优先级排序：empty > needs_organization > needs_content
+  const priorityOrder: { [key: string]: number } = {
+    empty: 1,
+    needs_organization: 2,
+    needs_content: 3,
+  };
+
+  catalogsNeedingAction.sort((a: any, b: any) => {
+    const priorityA = priorityOrder[a.quality_state] || 999;
+    const priorityB = priorityOrder[b.quality_state] || 999;
+    return priorityA - priorityB;
+  });
+
+  return catalogsNeedingAction;
 };
 

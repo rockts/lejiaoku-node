@@ -111,3 +111,31 @@ export const getCatalogQualityDiagnosis = async (
   }
 };
 
+/**
+ * 获取待行动的 Catalog 列表
+ * GET /api/admin/catalogs/actions
+ * 权限：仅 admin
+ * 
+ * 返回：仅返回 action_type != no_action 的 catalog
+ * 按优先级排序：empty > needs_organization > needs_content
+ */
+export const getCatalogActions = async (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => {
+  try {
+    const actions = await catalogStatisticsService.getCatalogActions();
+
+    response.json({
+      success: true,
+      data: actions,
+      count: actions.length,
+      message: `成功获取 ${actions.length} 个待行动的 catalog`,
+    });
+  } catch (error) {
+    console.error('获取待行动的 catalog 列表失败:', error);
+    next(error);
+  }
+};
+

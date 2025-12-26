@@ -7,6 +7,8 @@ import {
   bindResourceToCatalogFromAutoMeta,
 } from './textbook.controller';
 import * as catalogStatisticsController from './catalog-statistics.controller';
+import * as catalogInfoController from './catalog-info.controller';
+import * as catalogUnitSearchController from './catalog-unit-search.controller';
 import { authGuard, requireRole } from '../auth/auth.middleware';
 import { adminGuard } from '../auth/admin.middleware';
 
@@ -68,6 +70,50 @@ router.get(
   authGuard,
   adminGuard,
   catalogStatisticsController.getCatalogQualityDiagnosis,
+);
+
+/**
+ * 获取待行动的 Catalog 列表（仅 admin）
+ * GET /api/admin/catalogs/actions
+ */
+router.get(
+  '/admin/catalogs/actions',
+  authGuard,
+  adminGuard,
+  catalogStatisticsController.getCatalogActions,
+);
+
+/**
+ * 获取 Catalog 基本信息（用于教材目录页）
+ * GET /api/catalogs/:catalogId/info
+ * 权限：公开（无需登录）
+ */
+router.get(
+  '/catalogs/:catalogId/info',
+  catalogInfoController.getCatalogInfo,
+);
+
+/**
+ * 获取 Catalog 下的 Unit 列表（用于教材目录页）
+ * GET /api/catalogs/:catalogId/units
+ * 权限：公开（无需登录）
+ */
+router.get(
+  '/catalogs/:catalogId/units',
+  catalogInfoController.getCatalogUnits,
+);
+
+/**
+ * 搜索指定 catalog + unit 的资源（第一条被"定死"的教材搜索 SQL）
+ * GET /api/catalogs/:catalogId/units/:unit/resources
+ * 权限：公开（无需登录）
+ * 
+ * 场景：用户在"教材目录页"点击某个 unit
+ * 搜索条件固定为：subject, grade, textbook_version, unit, status = approved
+ */
+router.get(
+  '/catalogs/:catalogId/units/:unit/resources',
+  catalogUnitSearchController.searchResourcesByCatalogUnit,
 );
 
 /**
