@@ -14,6 +14,12 @@ build/
 .env.local
 .env.*.local
 
+# 密钥和敏感配置文件
+assets/example.env
+config/*.key
+config/private.key
+config/public.key
+
 # IDE
 .vscode/
 .idea/
@@ -41,3 +47,4 @@ coverage/
 *.tmp
 *.temp
 
+.env.bak

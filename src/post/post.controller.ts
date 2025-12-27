@@ -1,3 +1,12 @@
+/**
+ * @deprecated Post Controller 已废弃
+ * 
+ * Post 模块的所有功能已由 Resource 模块完整替代。
+ * 此文件保留仅用于向后兼容，新功能请使用 Resource 模块。
+ * 
+ * 相关迁移计划请参考：docs/migration/post-to-resource-migration-plan.md
+ */
+
 import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import {
@@ -15,6 +24,7 @@ import { TagModel } from '../tag/tag.model';
 import { getTagByName, createTag } from '../tag/tag.service';
 /**
  * 资源列表
+ * @deprecated 请使用 Resource Controller 的 index 方法
  */
 export const index = async (
     request: Request,

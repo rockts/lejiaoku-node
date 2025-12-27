@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import _ from 'lodash';
 import { UserModel } from './user.model';
 import { deleteUser, createUser, updateUser, getUserList, getUserById, getUserTotalCount } from './user.service';
+import { connection } from '../app/database/mysql';
+import { enrichUserWithAvatarUrl, enrichUserListWithAvatarUrl } from './user.helper';
 
 /**
  * 用户列表
@@ -22,8 +24,10 @@ export const index = async (
   }
 
   try {
-    const user = await getUserList();
-    response.send(user);
+    const userList = await getUserList();
+    // 为每个用户设置 avatar_url（如果有头像）
+    const enrichedUserList = enrichUserListWithAvatarUrl(userList);
+    response.send(enrichedUserList);
   } catch (error) {
     next(error);
   }
@@ -69,8 +73,11 @@ export const show = async (
       return next(new Error('USER_NOT_FOUND'));
     }
 
+    // 为用户设置 avatar_url（如果有头像）
+    const enrichedUser = enrichUserWithAvatarUrl(user, parseInt(userId, 10));
+
     // 做出响应
-    response.send(user);
+    response.send(enrichedUser);
   } catch (error) {
     next(error);
   }
@@ -84,16 +91,43 @@ export const update = async (
   response: Response,
   next: NextFunction,
 ) => {
+  console.log('📝 更新用户信息');
+
   // 准备数据
   const { id } = request.user;
-  const userData = _.pick(request.body.update, ['name', 'password', 'email']);
+  const update = request.body.update || {};
+  // name: 真实姓名（可选，不需要唯一）
+  // username: 登录用户名（可选，需验证格式和唯一性）
+  const userData = _.pick(update, ['name', 'username', 'password', 'email', 'description', 'nickname', 'avatar_url']);
+
+  // 如果没有要更新的字段，返回错误
+  if (Object.keys(userData).length === 0) {
+    return next(new Error('NO_UPDATE_FIELDS'));
+  }
+
+  console.log('👤 用户ID:', id);
+  console.log('📋 更新数据:', userData);
 
   // 更新用户
   try {
-    const data = await updateUser(id, userData);
+    await updateUser(id, userData);
 
-    // 做出响应
-    response.send(data);
+    // 获取更新后的用户信息
+    const updatedUser = await getUserById(id);
+
+    if (!updatedUser) {
+      return next(new Error('USER_NOT_FOUND'));
+    }
+
+    // 为用户设置 avatar_url（如果有头像）
+    const enrichedUser = enrichUserWithAvatarUrl(updatedUser, id);
+
+    // 做出响应（返回更新后的用户信息）
+    response.send({
+      success: true,
+      message: '更新成功',
+      user: enrichedUser,
+    });
   } catch (error) {
     next(error);
   }
@@ -101,24 +135,64 @@ export const update = async (
 
 /**
  * 删除用户
+ * DELETE /api/users/:userId
+ * 权限：仅 admin 允许删除用户
  */
 export const destroy = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  // 准备数据
-  const { userId } = request.params;
-
-  // 删除用户
   try {
+    // 准备数据
+    const { userId } = request.params;
+    const targetUserId = parseInt(userId, 10);
 
-    const data = await deleteUser(parseInt(userId, 10));
+    if (isNaN(targetUserId)) {
+      return response.status(400).json({
+        error: 'invalid_user_id',
+        message: 'Invalid user ID',
+        success: false,
+      });
+    }
+
+    // 检查用户是否存在
+    const existingUser = await getUserById(targetUserId);
+    if (!existingUser) {
+      return response.status(404).json({
+        error: 'user_not_found',
+        message: 'User not found',
+        success: false,
+      });
+    }
+
+    // 禁止删除最后一个 admin
+    if ((existingUser as any).role === 'admin') {
+      const [adminCountResult] = await connection.promise().query(
+        `SELECT COUNT(*) as count FROM user WHERE role = 'admin'`,
+      );
+      const adminCount = (adminCountResult as any[])[0].count;
+
+      if (adminCount <= 1) {
+        return response.status(400).json({
+          error: 'cannot_delete_last_admin',
+          message: 'Cannot delete the last admin user',
+          success: false,
+        });
+      }
+    }
+
+    // 删除用户
+    await deleteUser(targetUserId);
 
     // 做出响应
-    response.send(data);
-
+    response.json({
+      success: true,
+      message: 'User deleted successfully',
+      user_id: targetUserId,
+    });
   } catch (error) {
+    console.error('删除用户失败:', error);
     next(error);
   }
 };

@@ -1,9 +1,22 @@
+/**
+ * @deprecated Post Service 已废弃
+ * 
+ * Post 模块的所有功能已由 Resource 模块完整替代。
+ * 此文件保留仅用于向后兼容，新功能请使用 Resource 模块。
+ * 
+ * ⚠️ 注意：部分类型定义（GetPostOptionsFilter, GetPostOptionsPagination）
+ * 仍被其他模块（如 comment.service.ts, types/express.d.ts）引用，需保留。
+ * 
+ * 相关迁移计划请参考：docs/migration/post-to-resource-migration-plan.md
+ */
+
 import { connection } from '../app/database/mysql';
 import { PostModel } from './post.model';
 import { sqlFragment } from './post.provider';
 
 /**
  * 获取内容列表
+ * @deprecated 请使用 Resource Service 的 getResource 方法
  */
 export interface GetPostOptionsFilter {
   name: string;

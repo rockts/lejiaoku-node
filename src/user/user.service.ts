@@ -23,22 +23,28 @@ export const createUser = async (user: UserModel) => {
  */
 export const getUserList = async () => {
   const statement = `
-    SELECT
-      user.id, 
-      user.name,
-      user.email,
-      user.created_at,
-      user.updated_at,
-      IF (
-        COUNT(avatar.id), 1, NULL
-      ) AS avatar
-    FROM 
-      user
-    LEFT JOIN avatar
-       ON avatar.userId = user.id
+        SELECT
+          user.id, 
+          user.name,
+          user.username,
+          user.email,
+          user.role,
+          user.nickname,
+          user.avatar_url,
+          user.description,
+          user.status,
+          user.created_at,
+          user.updated_at,
+          IF (
+            COUNT(avatar.id), 1, NULL
+          ) AS avatar
+        FROM 
+          user
+        LEFT JOIN avatar
+           ON avatar.userId = user.id
 
-    GROUP BY user.id
-  `;
+        GROUP BY user.id
+      `;
 
   const [data] = await connection.promise().query(statement);
 
@@ -59,40 +65,77 @@ export const getUser = (condition: string) => {
     // 准备选项
     const { password, name, email } = options;
 
-    // 准备查询
-    const statement = `
-      SELECT 
-        user.id,
-        user.name,
-        user.email,
-        user.created_at,
-        user.updated_at,
-        IF (
-          COUNT(avatar.id), 1, NULL
-        ) AS avatar
-        ${password ? ', password' : ''}
-        ${email ? ', email' : ''}
-        ${name ? ', nama' : ''}
-      FROM
-        user
-      LEFT JOIN avatar
-        ON avatar.userId = user.id
-      WHERE 
-        ${condition} = ?
-    `;
+    // 准备查询（注意：如果 password 选项为 true，需要单独查询以避免 GROUP BY 冲突）
+    let statement: string;
+    if (password) {
+      // 需要查询 password 时，不 LEFT JOIN avatar（避免 GROUP BY 问题）
+      statement = `
+        SELECT 
+          user.id,
+          user.name,
+          user.username,
+          user.email,
+          user.role,
+          user.password,
+          user.nickname,
+          user.avatar_url,
+          user.description,
+          user.status,
+          user.created_at,
+          user.updated_at
+        FROM
+          user
+        WHERE 
+          ${condition} = ?
+      `;
+    } else {
+      // 不需要 password 时，可以使用 LEFT JOIN avatar
+      statement = `
+        SELECT 
+          user.id,
+          user.name,
+          user.username,
+          user.email,
+          user.role,
+          user.nickname,
+          user.avatar_url,
+          user.description,
+          user.status,
+          user.created_at,
+          user.updated_at,
+          IF (
+            COUNT(avatar.id), 1, NULL
+          ) AS avatar
+        FROM
+          user
+        LEFT JOIN avatar
+          ON avatar.userId = user.id
+        WHERE 
+          ${condition} = ?
+        GROUP BY user.id
+      `;
+    }
 
     // 执行查询
     const [data] = await connection.promise().query(statement, param);
 
     // 提供数据
-    return data[0].id ? data[0] : null;
+    return data[0] && data[0].id ? data[0] : null;
   };
 };
 
 /**
- * 按用户名获取用户
+ * 按用户名获取用户（支持 name 或 username 字段）
  */
-export const getUserByName = getUser('user.name');
+export const getUserByName = async (nameOrUsername: string, options: GetUserOptions = {}) => {
+  // 先尝试用 name 查找
+  let user = await getUser('user.name')(nameOrUsername, options);
+  // 如果没找到，尝试用 username 查找
+  if (!user) {
+    user = await getUser('user.username')(nameOrUsername, options);
+  }
+  return user;
+};
 
 /**
  * 按用户 ID 获取用户

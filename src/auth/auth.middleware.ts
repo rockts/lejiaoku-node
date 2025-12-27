@@ -7,6 +7,7 @@ import { possess } from './auth.service';
 
 /**
  * 验证用户登录数据
+ * 支持 username 或 email 登录
  */
 export const validateLoginData = async (
   request: Request,
@@ -16,14 +17,20 @@ export const validateLoginData = async (
   console.log('👮‍♂️ 验证用户登录数据');
 
   // 准备数据
-  const { email, password } = request.body;
+  const { username, email, password } = request.body;
 
   // 验证必填数据
-  if (!email) return next(new Error('EMAIL_IS_REQUIRED'));
   if (!password) return next(new Error('PASSWORD_IS_REQUIRED'));
+  if (!username && !email) return next(new Error('USERNAME_OR_EMAIL_IS_REQUIRED'));
 
-  // 验证邮箱
-  const user = await userService.getUserByEmail(email, { password: true });
+  // 根据 username 或 email 查找用户
+  let user = null;
+  if (username) {
+    user = await userService.getUserByName(username, { password: true });
+  } else if (email) {
+    user = await userService.getUserByEmail(email, { password: true });
+  }
+
   if (!user) return next(new Error('USER_DOES_NOT_EXIST'));
 
   // 验证用户密码
@@ -39,21 +46,36 @@ export const validateLoginData = async (
 
 /**
  * 验证用户身份
+ * 检查请求头 Authorization 中的 JWT token，验证用户身份
  */
 export const authGuard = (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
-  console.log('👮🏼‍♀️ 验证用户身份');
+  // 记录请求信息（用于日志）
+  const uid = request.user?.id || 'anonymous';
+  const path = request.path;
+  console.log(`[Auth] ${request.method} ${path} - UID: ${uid}`);
 
-  return request.user.id ? next() : next(new Error('UNAUTHORIZED'));
+  // 检查是否有用户信息（由 currentUser 中间件注入）
+  if (!request.user || !request.user.id) {
+    console.log(`[Auth] 401 Unauthorized - ${request.method} ${path}`);
+    return response.status(401).json({
+      success: false,
+      message: '未授权，请先登录',
+      error: 'UNAUTHORIZED',
+    });
+  }
+
+  next();
 };
 
 /**
  * 当前用户
+ * 从请求头 Authorization 中提取并验证 JWT token，将用户信息注入 request.user
  */
-export const currentUser = (
+export const currentUser = async (
   request: Request,
   response: Response,
   next: NextFunction,
@@ -61,28 +83,114 @@ export const currentUser = (
   let user = null;
 
   try {
-    // 提取 Authorization
+    // 提取 Authorization header
     const authorization = request.header('Authorization');
 
-    // 提取 JWT 令牌
-    const token = authorization.replace('Bearer ', '');
+    if (authorization) {
+      // 提取 JWT 令牌（支持 "Bearer <token>" 格式）
+      const token = authorization.replace(/^Bearer\s+/i, '');
 
-    if (token) {
-      // 验证令牌
-      const decoded = jwt.verify(token, PUBLIC_KEY, {
-        algorithms: ['RS256'],
-      });
+      if (token) {
+        // 验证令牌
+        const decoded = jwt.verify(token, PUBLIC_KEY, {
+          algorithms: ['RS256'],
+        }) as any;
 
-      user = decoded as any;
+        // decoded 包含 payload，需要提取 user 信息
+        // token payload 格式: { uid, role } 或 { payload: { uid, role } }
+        const payload = decoded.payload || decoded;
+        const uid = payload.uid || payload.id; // 支持 uid 和 id（向后兼容）
+        
+        // 根据 uid 从数据库获取完整用户信息（包含 nickname, username 等所有字段）
+        if (uid) {
+          const dbUser = await userService.getUserById(uid as number);
+          if (dbUser) {
+            user = {
+              id: dbUser.id,
+              name: dbUser.name,
+              username: dbUser.username,
+              nickname: (dbUser as any).nickname,
+              email: dbUser.email,
+              role: (dbUser as any).role || payload.role || 'user',
+              description: (dbUser as any).description,
+              avatar_url: (dbUser as any).avatar_url,
+              avatar: (dbUser as any).avatar,
+              created_at: (dbUser as any).created_at,
+              updated_at: (dbUser as any).updated_at,
+            };
+          }
+        }
+        
+        // 如果数据库查询失败，使用 token 中的信息（向后兼容）
+        if (!user && uid) {
+          user = {
+            id: uid as number,
+            role: payload.role || 'user',
+          };
+        }
+      }
     }
-  } catch (error) { }
+  } catch (error) {
+    // token 无效或过期，user 保持为 null
+    // 不抛出错误，让后续的 authGuard 处理
+    console.log('Token 验证失败:', error instanceof Error ? error.message : error);
+  }
 
-  // 在请求里添加当前用户
+  // 在请求里添加当前用户（可能为 null）
   request.user = user;
 
   next();
 };
 
+
+/**
+ * 角色权限守卫
+ * 必须在 authGuard 之后使用
+ * @param roles 允许的角色数组，例如: ['admin', 'editor']
+ * 
+ * @deprecated 请使用 requireRole，此函数保留用于向后兼容
+ */
+export const roleGuard = (roles: string[]) => {
+  return requireRole(roles);
+};
+
+/**
+ * 通用权限校验中间件
+ * 支持单角色或多角色权限校验
+ * 必须在 authGuard 之后使用
+ * 
+ * @param roles 允许的角色数组，例如: ['admin'] 或 ['editor', 'admin']
+ * @returns Express 中间件函数
+ * 
+ * @example
+ * // 单角色
+ * router.post('/resources', authGuard, requireRole(['admin']), controller);
+ * 
+ * @example
+ * // 多角色
+ * router.post('/resources', authGuard, requireRole(['editor', 'admin']), controller);
+ */
+export const requireRole = (roles: string[]) => {
+  return (request: Request, response: Response, next: NextFunction) => {
+    const uid = request.user?.id || 'anonymous';
+    const userRole = (request.user as any)?.role || 'user';
+    const path = request.path;
+
+    console.log(`[RequireRole] ${request.method} ${path} - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
+
+    // 检查用户角色是否在允许的角色列表中
+    if (!roles.includes(userRole)) {
+      console.log(`[RequireRole] 403 Forbidden - UID: ${uid}, Role: ${userRole}, Required: [${roles.join(', ')}]`);
+      return response.status(403).json({
+        error: 'permission_denied',
+        message: 'You do not have permission to perform this action',
+        success: false,
+      });
+    }
+
+    next();
+  };
+};
 
 /**
  * 访问控制

@@ -3,15 +3,19 @@ import {
   GetPostOptionsFilter,
   GetPostOptionsPagination,
 } from '../src/post/post.service';
+import {
+  GetResourceOptionsFilter,
+  GetResourceOptionsPagination,
+} from '../src/resource/resource.service';
 
 declare global {
   namespace Express {
-    export interface Request {
-      user: TokenPayload;
-      fileMetaData: { width?: number; height?: number };
-      sort: string;
-      filter: GetPostOptionsFilter;
-      pagination: GetPostOptionsPagination;
-    }
+      export interface Request {
+        user: TokenPayload;
+        fileMetaData: { width?: number; height?: number };
+        sort: string;
+        filter: GetPostOptionsFilter | GetResourceOptionsFilter;
+        pagination: GetPostOptionsPagination | GetResourceOptionsPagination;
+      }
   }
 }
