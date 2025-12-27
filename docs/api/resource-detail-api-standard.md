@@ -39,6 +39,8 @@
 | `grade` | `string \| number \| null` | 年级（支持数字或字符串） | ✅ | `"一年级"`, `1`, `"四年级下册"` |
 | `textbook` | `string \| null` | 教材版本 | ✅ | `"人教版"`, `"苏教版"`, `"北师大版"` |
 | `chapter_info` | `string \| null` | 章节信息（非结构化文本） | ✅ | `"第一单元 春天来了"` |
+| `unit` | `string \| null` | 资源所属单元（显式字段，唯一合法来源） | ✅ | `"第一单元"`, `"整本教材"` |
+| `unit_index` | `number \| null` | 单元序号（用于排序） | ✅ | `1`, `2`, `3` |
 | `cover_url` | `string \| null` | 封面图片完整URL | ✅ | `"http://example.com/uploads/cover/xxx.jpg"` |
 | `download_count` | `number` | 下载次数 | ❌ (默认 0) | `42` |
 | `created_at` | `string` | 创建时间（ISO 8601格式） | ❌ | `"2024-12-24T10:00:00.000Z"` |
@@ -157,6 +159,8 @@
   "grade": "一年级",
   "textbook": "人教版",
   "chapter_info": "第一单元 春天来了",
+  "unit": "第一单元",
+  "unit_index": 1,
   "file_format": "PDF",
   "file_url": "http://example.com/uploads/resources/abc123.pdf",
   "cover_url": "http://example.com/uploads/cover/def456.jpg",
@@ -190,6 +194,8 @@
   "subject": "语文",
   "grade": "一年级",
   "textbook": "人教版",
+  "unit": "第一单元",
+  "unit_index": 1,
   "file_format": "PDF",
   "file_url": "http://example.com/uploads/resources/abc123.pdf",
   "cover_url": "http://example.com/uploads/cover/def456.jpg",
@@ -303,6 +309,8 @@ interface ResourceDetail {
   grade?: string | number | null;
   textbook?: string | null;
   chapter_info?: string | null;
+  unit?: string | null;
+  unit_index?: number | null;
   cover_url?: string | null;
   status?: string; // 仅管理员接口返回
   

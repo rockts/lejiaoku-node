@@ -19,6 +19,7 @@ import { enrichResourceWithCatalogInfo, enrichResourceListWithCatalogInfo } from
 import { processResourceAsync } from './resource-parser-worker';
 import { isCategoryAllowed, isFileFormatAllowed, isVideoResource } from './resource.constants';
 import * as updateResourceController from './resource.controller.update';
+import { connection } from '../app/database/mysql';
 
 /**
  * 将相对路径转换为完整URL或保持相对路径
@@ -436,6 +437,13 @@ export const store = async (
     // 准备资源数据
     // 处理 chapter_info：章节信息（非结构化文本，可选）
     const { chapter_info, auto_meta_status, unit, unit_index, catalog_id } = request.body;
+    
+    // 调试日志：打印 request.body 中的 catalog_id
+    console.log('📥 [创建资源] request.body 内容:');
+    console.log('  catalog_id:', catalog_id, '(类型:', typeof catalog_id, ')');
+    console.log('  unit:', unit);
+    console.log('  unit_index:', unit_index);
+    console.log('  request.body keys:', Object.keys(request.body));
 
     // 处理 auto_meta_status：AI元数据识别状态（可选，默认 pending）
     // 允许值：pending | done | failed
@@ -475,10 +483,17 @@ export const store = async (
     // 【系统级不变量】教材单元完整性硬约束
     // 规则：凡是已绑定 catalog 的资源，resource.unit 必须非空
     // 如果创建时传了 catalog_id，则 unit 必须提供
-    if (catalog_id && (!unit || unit.trim() === '')) {
+    // 
+    // 特殊处理："整本教材" 被视为有效单元值（用于表示资源覆盖整本教材，而非特定单元）
+    // 前端在单元留空时会自动设置为"整本教材"，后端需要识别并接受这个值
+    const normalizedUnit = unit ? (unit.trim() === '' ? null : unit.trim()) : null;
+    const isValidUnit = normalizedUnit && normalizedUnit !== '';
+    const isWholeTextbook = normalizedUnit === '整本教材';
+    
+    if (catalog_id && !isValidUnit && !isWholeTextbook) {
         return response.status(400).json({
             success: false,
-            message: '该资源已绑定教材，必须选择所属单元',
+            message: '该资源已绑定教材，必须选择所属单元（可选择"整本教材"）',
             error: 'UNIT_REQUIRED_FOR_CATALOG',
         });
     }
@@ -494,7 +509,7 @@ export const store = async (
         file_url,
         cover_url: cover_url_value,
         chapter_info: chapter_info || null, // 章节信息（非结构化文本，可选）
-        unit: unit || null, // 【系统级不变量】资源所属单元（显式字段，唯一合法来源）
+        unit: (normalizedUnit === '整本教材' ? '整本教材' : normalizedUnit) || null, // 【系统级不变量】资源所属单元（显式字段，唯一合法来源），"整本教材"为特殊值
         unit_index: unit_index || null, // 单元序号
         auto_meta_status: autoMetaStatus, // AI元数据识别状态（默认 pending，用于未来AI识别）
         auto_meta_result: null, // AI识别结果（JSON格式，未来使用，当前为 null）
@@ -511,10 +526,55 @@ export const store = async (
 
         // 如果创建时传了 catalog_id，立即绑定（在创建后）
         // 注意：此时 unit 已经通过上面的校验，确保非空
+        console.log('🔍 [创建资源] 检查是否需要绑定 catalog:');
+        console.log('  catalog_id 值:', catalog_id);
+        console.log('  catalog_id 类型:', typeof catalog_id);
+        console.log('  catalog_id 是否为真值:', !!catalog_id);
+        
         if (catalog_id) {
-            // 这里可以调用绑定 catalog 的逻辑
-            // 但为了保持代码清晰，建议通过单独的 bind-catalog 接口处理
-            // 或者在这里调用 bindResourceToCatalog
+            try {
+                const catalogIdNum = parseInt(String(catalog_id), 10);
+                if (!isNaN(catalogIdNum)) {
+                    // 验证教材目录是否存在
+                    const [catalogCheck]: any = await connection.promise().query(
+                        'SELECT id FROM textbook_catalog WHERE id = ?',
+                        [catalogIdNum]
+                    );
+                    
+                    if (!catalogCheck || catalogCheck.length === 0) {
+                        console.warn(`⚠️ [创建资源] 教材目录 ${catalogIdNum} 不存在，跳过绑定`);
+                    } else {
+                        // 绑定资源到教材目录（幂等操作）
+                        const bindStatement = `
+                            INSERT INTO resource_textbook_map (resource_id, textbook_catalog_id, source)
+                            VALUES (?, ?, 'manual')
+                            ON DUPLICATE KEY UPDATE 
+                              textbook_catalog_id = VALUES(textbook_catalog_id),
+                              source = 'manual'
+                        `;
+                        
+                        const [bindResult]: any = await connection.promise().query(bindStatement, [newResourceId, catalogIdNum]);
+                        console.log(`✅ [创建资源] 已绑定资源 ${newResourceId} 到教材目录 ${catalogIdNum}`);
+                        console.log(`  绑定结果:`, {
+                            affectedRows: bindResult.affectedRows,
+                            insertId: bindResult.insertId,
+                            changedRows: bindResult.changedRows
+                        });
+                        
+                        // 验证绑定是否成功
+                        const [verifyResult]: any = await connection.promise().query(
+                            'SELECT * FROM resource_textbook_map WHERE resource_id = ? AND textbook_catalog_id = ?',
+                            [newResourceId, catalogIdNum]
+                        );
+                        console.log(`  验证绑定:`, verifyResult.length > 0 ? '✅ 成功' : '❌ 失败', verifyResult);
+                    }
+                } else {
+                    console.warn(`⚠️ [创建资源] catalog_id 无法转换为数字: ${catalog_id}`);
+                }
+            } catch (bindError) {
+                console.error(`❌ [创建资源] 绑定教材目录失败:`, bindError);
+                // 绑定失败不影响资源创建，只记录错误
+            }
         }
 
         // 异步触发解析（不阻塞响应）

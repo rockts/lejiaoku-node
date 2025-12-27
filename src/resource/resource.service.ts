@@ -83,10 +83,19 @@ export const getResourceList = async (options: {
     const catalogConditions: string[] = [];
     const catalogParams: Array<any> = [];
 
+    // 调试日志
+    console.log('🔍 [资源查询] 使用 catalogFilter:');
+    console.log('  catalogFilters:', JSON.stringify(catalogFilters, null, 2));
+    console.log('  baseSql:', baseSql);
+    console.log('  baseParams:', baseParams);
+
     // 构建 catalog 筛选条件
     if (catalogFilters.catalog_id) {
       catalogConditions.push('c.id = ?');
-      catalogParams.push(catalogFilters.catalog_id);
+      // catalog_id 可能是字符串，需要转换为数字
+      const catalogIdNum = parseInt(String(catalogFilters.catalog_id), 10);
+      catalogParams.push(isNaN(catalogIdNum) ? catalogFilters.catalog_id : catalogIdNum);
+      console.log('  ✅ 添加 catalog_id 条件:', catalogIdNum);
     } else {
       // 如果没有 catalog_id，使用组合参数
       if (catalogFilters.subject) {
@@ -108,7 +117,8 @@ export const getResourceList = async (options: {
     }
 
     // 构建完整的 WHERE 条件
-    let whereClause = baseSql;
+    // 注意：在 JOIN 查询中，需要将 baseSql 中的 resource. 替换为 r.
+    let whereClause = baseSql.replace(/resource\./g, 'r.');
     if (catalogConditions.length > 0) {
       whereClause += ` AND ${catalogConditions.join(' AND ')}`;
     }
@@ -118,6 +128,13 @@ export const getResourceList = async (options: {
       whereClause += ' AND r.unit = ?';
       catalogParams.push(filter.unit);
     }
+
+    // 调试日志
+    console.log('🔍 [资源查询] catalogFilter SQL 构建:');
+    console.log('  whereClause:', whereClause);
+    console.log('  catalogParams:', catalogParams);
+    console.log('  baseParams:', baseParams);
+    console.log('  final queryParams:', [...baseParams, ...catalogParams, pagination.limit, pagination.offset]);
 
     // 【搜索系统规范】排序规则：catalog + unit 或 catalog 场景
     // ORDER BY unit_index ASC, created_at DESC
@@ -157,6 +174,10 @@ export const getResourceList = async (options: {
     `;
 
     queryParams = [...baseParams, ...catalogParams, pagination.limit, pagination.offset];
+    
+    // 调试日志：打印最终 SQL
+    console.log('  📝 最终 SQL:', statement.replace(/\s+/g, ' ').trim());
+    console.log('  📝 查询参数:', queryParams);
   } else if (filter && filter.name === 'keyword') {
     // 【搜索系统规范】keyword 场景
     // 排序规则：ORDER BY relevance DESC, created_at DESC
@@ -241,6 +262,19 @@ export const getResourceList = async (options: {
     .promise()
     .query(statement, queryParams);
 
+  // 调试日志：查询结果
+  if (useCatalogJoin) {
+    console.log('  📊 查询结果数量:', Array.isArray(data) ? data.length : 0);
+    if (Array.isArray(data) && data.length > 0) {
+      console.log('  ✅ 找到资源:', data.map((r: any) => ({ id: r.id, title: r.title, unit: r.unit, status: r.status })));
+    } else {
+      console.log('  ⚠️  未找到资源，可能原因：');
+      console.log('    1. 资源未绑定到该 catalog');
+      console.log('    2. 资源状态不符合查询条件');
+      console.log('    3. JOIN 条件不匹配');
+    }
+  }
+
   return data;
 };
 
@@ -311,7 +345,8 @@ export const getResourceTotalCount = async (options: {
     }
 
     // 构建完整的 WHERE 条件
-    let whereClause = baseSql;
+    // 注意：在 JOIN 查询中，需要将 baseSql 中的 resource. 替换为 r.
+    let whereClause = baseSql.replace(/resource\./g, 'r.');
     if (catalogConditions.length > 0) {
       whereClause += ` AND ${catalogConditions.join(' AND ')}`;
     }

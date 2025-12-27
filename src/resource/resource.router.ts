@@ -106,11 +106,14 @@ router.patch(
  * 更新资源（编辑资源）
  * PUT /api/resources/:id
  * 权限：admin、editor 或资源所有者
+ * 支持 JSON 和 FormData 两种格式（如果上传封面，使用 FormData）
  */
 router.put(
   '/resources/:id',
   authGuard, // 需要登录
   resourcePermissionGuard, // 权限验证：admin、editor 或资源所有者
+  resourceWithCoverInterceptor, // 文件上传中间件（支持封面上传，可选）
+  resourceCoverProcessor, // 封面图片尺寸调整处理器（生成 large/medium/thumbnail）
   updateResourceController.update,
 );
 

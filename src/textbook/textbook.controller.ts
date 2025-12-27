@@ -182,6 +182,7 @@ export const getTextbookCatalogList = async (
     const educationLevel = request.query.education_level as string | undefined; // 学段筛选：'elementary' 或 'middle' 或 '小学' 或 '初中'
     const grade = request.query.grade as string | undefined; // 年级筛选
     const subject = request.query.subject as string | undefined; // 学科筛选
+    const textbookVersion = request.query.textbook_version as string | undefined; // 教材版本筛选
     const page = parseInt(request.query.page as string || '1', 10); // 页码，默认第1页
     const limit = parseInt(request.query.limit as string || '20', 10); // 每页数量，默认20条
     const offset = (page - 1) * limit;
@@ -206,9 +207,55 @@ export const getTextbookCatalogList = async (
       params.push(grade);
     }
 
-    if (subject) {
+    // 特殊处理：如果指定了版本但没有指定学科，需要根据版本限制学科
+    // 规则：
+    // - 部编版：只用于 语文、道德与法治、历史
+    // - 教科版：只用于 科学
+    // - 美术出版社：只用于 美术、书法练习指导
+    if (textbookVersion && !subject) {
+      if (textbookVersion === '部编版') {
+        // 部编版只用于：语文、道德与法治、历史
+        // 根据学段决定：小学有语文、道德与法治；初中有语文、道德与法治、历史
+        const levelValue = educationLevel === '小学' || educationLevel === 'elementary' 
+          ? 'elementary' 
+          : educationLevel === '初中' || educationLevel === 'middle' 
+          ? 'middle' 
+          : educationLevel;
+        
+        if (levelValue === 'elementary') {
+          // 小学：语文、道德与法治
+          whereConditions.push('subject IN (?, ?)');
+          params.push('语文', '道德与法治');
+        } else if (levelValue === 'middle') {
+          // 初中：语文、道德与法治、历史
+          whereConditions.push('subject IN (?, ?, ?)');
+          params.push('语文', '道德与法治', '历史');
+        } else {
+          // 如果学段也不确定，包含所有可能的学科
+          whereConditions.push('subject IN (?, ?, ?)');
+          params.push('语文', '道德与法治', '历史');
+        }
+      } else if (textbookVersion === '教科版') {
+        // 教科版只用于：科学（只有小学）
+        whereConditions.push('subject = ?');
+        params.push('科学');
+      } else if (textbookVersion === '美术出版社') {
+        // 美术出版社只用于：美术、书法练习指导
+        whereConditions.push('subject IN (?, ?)');
+        params.push('美术', '书法练习指导');
+      } else {
+        // 其他版本：如果指定了版本但没有指定学科，不限制学科
+        // 保持原有逻辑
+      }
+    } else if (subject) {
+      // 如果指定了学科，直接使用
       whereConditions.push('subject = ?');
       params.push(subject);
+    }
+
+    if (textbookVersion) {
+      whereConditions.push('textbook_version = ?');
+      params.push(textbookVersion);
     }
 
     const whereClause = whereConditions.length > 0 

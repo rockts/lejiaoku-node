@@ -5,6 +5,47 @@ import fs from 'fs';
 import Jimp from 'jimp';
 
 /**
+ * 将中文年级转换为数字年级（用于精确匹配）
+ * 例如："二年级" -> "2", "一年级" -> "1"
+ */
+function convertGradeToNumber(grade: string | number): string {
+  if (typeof grade === 'number') {
+    return String(grade);
+  }
+  
+  const gradeMap: { [key: string]: string } = {
+    '一年级': '1',
+    '二年级': '2',
+    '三年级': '3',
+    '四年级': '4',
+    '五年级': '5',
+    '六年级': '6',
+    '七年级': '7',
+    '八年级': '8',
+    '九年级': '9',
+  };
+  
+  // 如果已经是数字字符串，直接返回
+  if (/^\d+$/.test(grade.trim())) {
+    return grade.trim();
+  }
+  
+  // 尝试从 map 中查找
+  if (gradeMap[grade]) {
+    return gradeMap[grade];
+  }
+  
+  // 尝试提取数字（如 "2年级" -> "2"）
+  const match = grade.match(/(\d+)/);
+  if (match) {
+    return match[1];
+  }
+  
+  // 如果无法转换，返回原值（可能会匹配失败）
+  return grade;
+}
+
+/**
  * 确保上传目录存在
  */
 const uploadDir = 'uploads/resources';
@@ -482,8 +523,40 @@ export const filter = async (
     params.push(subject);
   }
   if (grade && !hasCatalogFilter) {
-    sql += ' AND resource.grade LIKE ?';
-    params.push(`%${grade}%`);
+    // 【修复年级筛选逻辑】
+    // 问题：使用 LIKE '%二年级%' 会误匹配"六年级"中的"二"
+    // 解决方案：使用精确匹配或提取数字后匹配
+    // 
+    // 首页筛选依据：
+    // 1. hero区搜索：使用 keyword 参数，只搜索 title/description（优先级 3）
+    // 2. topbar搜索：使用 keyword 参数，只搜索 title/description（优先级 3）
+    // 3. 学科/年级筛选器：使用 subject/grade 参数，直接筛选 resource 表字段（优先级 4）
+    // 
+    // 筛选规则：
+    // - 如果 grade 是数字（如 "2"），精确匹配 resource.grade 中的数字部分
+    // - 如果 grade 是中文（如 "二年级"），转换为数字后匹配
+    // - 如果 grade 包含数字（如 "2年级"、"二年级下册"），提取数字后匹配
+    // - 使用精确匹配，避免 LIKE 误匹配
+    
+    // 转换年级为数字（用于精确匹配）
+    const gradeNumber = convertGradeToNumber(grade as string);
+    
+    // 使用精确匹配：匹配 resource.grade 中包含该数字的情况
+    // 例如：grade="2" 或 "二年级" 匹配 "二年级"、"2年级"、"二年级上册"、"2年级下册" 等
+    // 但不会匹配 "六年级"、"12年级" 等
+    // 使用 REGEXP 进行更精确的匹配：匹配以该数字开头的年级
+    sql += ` AND (
+      resource.grade = ? 
+      OR resource.grade LIKE ? 
+      OR resource.grade LIKE ? 
+      OR resource.grade REGEXP ?
+    )`;
+    params.push(
+      grade, // 精确匹配原值（如 "二年级"）
+      `${gradeNumber}年级%`, // 匹配 "2年级"、"2年级上册" 等
+      `%${grade}%`, // 匹配包含原值的情况（如 "二年级上册" 包含 "二年级"）
+      `^${gradeNumber}[^0-9]|^${gradeNumber}$` // 正则：匹配以该数字开头且后面不是数字的情况（避免匹配 "12年级"）
+    );
   }
   if ((textbook || textbook_version) && !hasCatalogFilter) {
     sql += ' AND resource.textbook = ?';
