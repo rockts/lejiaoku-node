@@ -39,6 +39,7 @@
 | `grade` | `string \| number \| null` | 年级（支持数字或字符串） | ✅ | `"一年级"`, `1`, `"四年级下册"` |
 | `textbook` | `string \| null` | 教材版本 | ✅ | `"人教版"`, `"苏教版"`, `"北师大版"` |
 | `chapter_info` | `string \| null` | 章节信息（非结构化文本） | ✅ | `"第一单元 春天来了"` |
+| `source_attribution` | `string \| null` | 资源出处/来源标注 | ✅ | `"xx教育"`, `"某某出版社"` |
 | `unit` | `string \| null` | 资源所属单元（显式字段，唯一合法来源） | ✅ | `"第一单元"`, `"整本教材"` |
 | `unit_index` | `number \| null` | 单元序号（用于排序） | ✅ | `1`, `2`, `3` |
 | `cover_url` | `string \| null` | 封面图片完整URL | ✅ | `"http://example.com/uploads/cover/xxx.jpg"` |
@@ -112,6 +113,7 @@
 - ✅ `grade` - 年级
 - ✅ `textbook` - 教材版本
 - ✅ `chapter_info` - 章节信息
+- ✅ `source_attribution` - 资源出处/来源标注
 - ✅ `cover_url` - 封面URL
 - ✅ `download_count` - 下载次数
 - ✅ `created_at` - 创建时间
@@ -159,6 +161,7 @@
   "grade": "一年级",
   "textbook": "人教版",
   "chapter_info": "第一单元 春天来了",
+  "source_attribution": "xx教育",
   "unit": "第一单元",
   "unit_index": 1,
   "file_format": "PDF",
@@ -309,6 +312,7 @@ interface ResourceDetail {
   grade?: string | number | null;
   textbook?: string | null;
   chapter_info?: string | null;
+  source_attribution?: string | null;
   unit?: string | null;
   unit_index?: number | null;
   cover_url?: string | null;

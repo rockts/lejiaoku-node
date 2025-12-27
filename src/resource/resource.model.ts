@@ -10,6 +10,7 @@ export class ResourceModel {
   file_url?: string;
   cover_url?: string;
   chapter_info?: string | null; // 章节信息（非结构化文本）
+  source_attribution?: string | null; // 资源出处/来源标注（如：xx教育、某某出版社等）
   auto_meta_status?: 'pending' | 'done' | 'failed'; // AI元数据识别状态：pending(待识别)/done(已完成)/failed(失败)
   auto_meta_result?: any; // AI识别结果（JSON格式，未来用于存储封面/章节/简介等）
   download_count?: number;

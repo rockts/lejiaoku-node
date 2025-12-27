@@ -135,7 +135,8 @@ export const getCatalogInfo = async (catalogId: number) => {
 
   const catalog = (catalogData as any[])[0];
 
-  // 2. 获取统计信息（只统计已审核资源）
+  // 2. 获取统计信息（只统计已审核资源，且 unit 不为空）
+  // 【修复】统计口径与单元列表保持一致：只统计 unit 不为空且不为空字符串的资源
   const statsStatement = `
     SELECT 
       COUNT(DISTINCT r.id) as resource_total,
@@ -144,6 +145,8 @@ export const getCatalogInfo = async (catalogId: number) => {
     INNER JOIN resource_textbook_map m ON m.resource_id = r.id
     WHERE m.textbook_catalog_id = ?
       AND r.status = 'approved'
+      AND r.unit IS NOT NULL
+      AND r.unit != ''
   `;
   const [statsData] = await connection.promise().query(statsStatement, [catalogId]);
   const stats = (statsData as any[])[0];
@@ -216,10 +219,14 @@ const calculateUnitState = (resourceCount: number): UnitState => {
  * - unit_state (Unit 健康度：empty | sparse | healthy)
  */
 export const getCatalogUnits = async (catalogId: number) => {
+  // 【彻底修复】相同名称的单元应该合并，处理以下问题：
+  // 1. 只按 unit 分组，不按 unit_index 分组
+  // 2. 规范化 unit 字段：去除首尾空格，将多个连续空格合并为一个空格
+  // 3. 对于 unit_index，取最小的非空值
   const statement = `
     SELECT 
-      r.unit,
-      r.unit_index,
+      TRIM(REGEXP_REPLACE(r.unit, ' +', ' ')) as unit,
+      MIN(CASE WHEN r.unit_index IS NOT NULL THEN r.unit_index END) as unit_index,
       COUNT(r.id) as resource_count
     FROM resource r
     INNER JOIN resource_textbook_map m ON m.resource_id = r.id
@@ -227,20 +234,62 @@ export const getCatalogUnits = async (catalogId: number) => {
       AND r.status = 'approved'
       AND r.unit IS NOT NULL
       AND r.unit != ''
-    GROUP BY r.unit, r.unit_index
+    GROUP BY TRIM(REGEXP_REPLACE(r.unit, ' +', ' '))
     ORDER BY 
-      CASE WHEN r.unit_index IS NULL THEN 1 ELSE 0 END,
-      r.unit_index ASC,
-      r.unit ASC
+      CASE WHEN MIN(CASE WHEN r.unit_index IS NOT NULL THEN r.unit_index END) IS NULL THEN 1 ELSE 0 END,
+      MIN(CASE WHEN r.unit_index IS NOT NULL THEN r.unit_index END) ASC,
+      TRIM(REGEXP_REPLACE(r.unit, ' +', ' ')) ASC
   `;
 
   const [data] = await connection.promise().query(statement, [catalogId]);
   const units = data as any[];
 
-  // 为每个 unit 派生 unit_state
-  return units.map((unit: any) => ({
+  // 【双重保障】在应用层再次规范化 unit 字段，确保完全一致
+  // 规范化规则：去除首尾空格，将多个连续空格合并为一个空格
+  const normalizeUnit = (unit: string): string => {
+    if (!unit || typeof unit !== 'string') return unit;
+    return unit.trim().replace(/\s+/g, ' ');
+  };
+
+  // 为每个 unit 派生 unit_state，并确保 unit 字段已规范化
+  const normalizedUnits = units.map((unit: any) => ({
     ...unit,
+    unit: normalizeUnit(unit.unit), // 确保 unit 字段已规范化
     unit_state: calculateUnitState(unit.resource_count || 0),
   }));
+
+  // 【最终去重】如果规范化后仍有重复，再次合并（双重保障）
+  const unitMap = new Map<string, any>();
+  for (const unit of normalizedUnits) {
+    const normalizedUnitName = normalizeUnit(unit.unit);
+    if (unitMap.has(normalizedUnitName)) {
+      const existing = unitMap.get(normalizedUnitName);
+      existing.resource_count += unit.resource_count;
+      // 如果 existing 的 unit_index 为空，使用新的 unit_index
+      if (!existing.unit_index && unit.unit_index) {
+        existing.unit_index = unit.unit_index;
+      }
+      // 如果新的 unit_index 更小，使用更小的
+      if (unit.unit_index && (!existing.unit_index || unit.unit_index < existing.unit_index)) {
+        existing.unit_index = unit.unit_index;
+      }
+    } else {
+      unitMap.set(normalizedUnitName, { ...unit, unit: normalizedUnitName });
+    }
+  }
+
+  // 转换为数组并排序
+  const finalUnits = Array.from(unitMap.values()).sort((a, b) => {
+    // 先按 unit_index 排序（null 放最后）
+    if (a.unit_index === null && b.unit_index !== null) return 1;
+    if (a.unit_index !== null && b.unit_index === null) return -1;
+    if (a.unit_index !== null && b.unit_index !== null) {
+      if (a.unit_index !== b.unit_index) return a.unit_index - b.unit_index;
+    }
+    // 再按 unit 名称排序
+    return a.unit.localeCompare(b.unit, 'zh-CN');
+  });
+
+  return finalUnits;
 };
 

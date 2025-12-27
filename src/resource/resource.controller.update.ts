@@ -152,6 +152,7 @@ export const update = async (
       grade,
       textbook,
       chapter_info,
+      source_attribution,
       cover_url,
       unit,
       unit_index,
@@ -191,10 +192,18 @@ export const update = async (
     if (grade !== undefined && grade !== null) updates.grade = grade;
     if (textbook !== undefined && textbook !== null) updates.textbook = textbook;
     if (chapter_info !== undefined && chapter_info !== null) updates.chapter_info = chapter_info;
+    if (source_attribution !== undefined && source_attribution !== null) {
+      updates.source_attribution = typeof source_attribution === 'string' ? source_attribution.trim() : source_attribution;
+    }
     if (unit !== undefined && unit !== null) {
-      // 处理"整本教材"特殊值
+      // 处理"整本教材"特殊值和空字符串
       const normalizedUnit = typeof unit === 'string' ? unit.trim() : unit;
-      updates.unit = normalizedUnit === '整本教材' ? '整本教材' : normalizedUnit; // 【系统级不变量】资源所属单元（显式字段，唯一合法来源），"整本教材"为特殊值
+      // 如果 trim 后为空字符串，设置为 null
+      if (normalizedUnit === '') {
+        updates.unit = null;
+      } else {
+        updates.unit = normalizedUnit === '整本教材' ? '整本教材' : normalizedUnit; // 【系统级不变量】资源所属单元（显式字段，唯一合法来源），"整本教材"为特殊值
+      }
     }
     if (unit_index !== undefined && unit_index !== null) updates.unit_index = unit_index;
     
@@ -305,13 +314,19 @@ export const update = async (
             if (!catalogCheck || catalogCheck.length === 0) {
               console.warn(`⚠️ [更新资源] 教材目录 ${catalogIdNum} 不存在，跳过绑定`);
             } else {
-              // 绑定资源到教材目录（幂等操作）
+              // 【修复】先删除该资源的所有旧绑定，再绑定新的
+              // 这样可以确保解绑后重新绑定不会失败
+              // 因为表的唯一约束是 (resource_id, textbook_catalog_id)，如果旧的绑定还在，ON DUPLICATE KEY UPDATE 可能不会正确更新
+              await connection.promise().query(
+                'DELETE FROM resource_textbook_map WHERE resource_id = ?',
+                [resourceId]
+              );
+              console.log(`🗑️ [更新资源] 已删除资源 ${resourceId} 的旧绑定`);
+              
+              // 绑定资源到教材目录
               const bindStatement = `
                 INSERT INTO resource_textbook_map (resource_id, textbook_catalog_id, source)
                 VALUES (?, ?, 'manual')
-                ON DUPLICATE KEY UPDATE 
-                  textbook_catalog_id = VALUES(textbook_catalog_id),
-                  source = 'manual'
               `;
               
               const [bindResult]: any = await connection.promise().query(bindStatement, [resourceId, catalogIdNum]);
@@ -319,7 +334,6 @@ export const update = async (
               console.log(`  绑定结果:`, {
                 affectedRows: bindResult.affectedRows,
                 insertId: bindResult.insertId,
-                changedRows: bindResult.changedRows
               });
               
               // 验证绑定是否成功
@@ -369,6 +383,13 @@ export const update = async (
 
     // 9. 添加 catalog_info（如果已绑定教材目录）
     const resourceWithCatalogInfo = await enrichResourceWithCatalogInfo(updatedResource);
+    
+    // 调试日志：确保响应中包含所有必要字段
+    console.log('📤 [更新资源] 响应数据检查:');
+    console.log('  catalog_id:', resourceWithCatalogInfo.catalog_id);
+    console.log('  unit:', resourceWithCatalogInfo.unit);
+    console.log('  unit_index:', resourceWithCatalogInfo.unit_index);
+    console.log('  catalog_info:', resourceWithCatalogInfo.catalog_info ? JSON.stringify(resourceWithCatalogInfo.catalog_info) : 'null');
 
     // 10. 返回更新后的资源
     response.send(resourceWithCatalogInfo);

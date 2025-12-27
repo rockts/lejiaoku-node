@@ -297,10 +297,23 @@ export const show = async (
             delete resource.user_id; // 普通用户接口不应该返回 user_id
         }
 
+        // 调试日志：检查 unit 和 unit_index 字段
+        console.log('🔍 [资源详情] 查询结果检查:');
+        console.log('  resource.id:', resource.id);
+        console.log('  resource.unit:', resource.unit);
+        console.log('  resource.unit_index:', resource.unit_index);
+        console.log('  resource 对象键:', Object.keys(resource));
+
         // 附加教材信息（如果已绑定）
         // 扩展字段：textbooks 和 catalog_info 仅在资源关联教材时存在
         // 这些字段未来可能增强，但保证向后兼容（不会删除现有字段）
         const resourceWithCatalogInfo = await enrichResourceWithCatalogInfo(resource);
+
+        // 调试日志：检查最终响应数据
+        console.log('📤 [资源详情] 最终响应数据检查:');
+        console.log('  resourceWithCatalogInfo.unit:', resourceWithCatalogInfo.unit);
+        console.log('  resourceWithCatalogInfo.unit_index:', resourceWithCatalogInfo.unit_index);
+        console.log('  resourceWithCatalogInfo.catalog_id:', resourceWithCatalogInfo.catalog_id);
 
         // chapter_info 原样返回（已经是 resource 的一部分）
         // 所有字段已按标准接口规范返回，详见：docs/api/resource-detail-api-standard.md
@@ -436,7 +449,7 @@ export const store = async (
 
     // 准备资源数据
     // 处理 chapter_info：章节信息（非结构化文本，可选）
-    const { chapter_info, auto_meta_status, unit, unit_index, catalog_id } = request.body;
+    const { chapter_info, source_attribution, auto_meta_status, unit, unit_index, catalog_id } = request.body;
     
     // 调试日志：打印 request.body 中的 catalog_id
     console.log('📥 [创建资源] request.body 内容:');
@@ -509,6 +522,7 @@ export const store = async (
         file_url,
         cover_url: cover_url_value,
         chapter_info: chapter_info || null, // 章节信息（非结构化文本，可选）
+        source_attribution: source_attribution ? source_attribution.trim() : null, // 资源出处/来源标注（如：xx教育、某某出版社等）
         unit: (normalizedUnit === '整本教材' ? '整本教材' : normalizedUnit) || null, // 【系统级不变量】资源所属单元（显式字段，唯一合法来源），"整本教材"为特殊值
         unit_index: unit_index || null, // 单元序号
         auto_meta_status: autoMetaStatus, // AI元数据识别状态（默认 pending，用于未来AI识别）

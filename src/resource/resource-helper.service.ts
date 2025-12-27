@@ -94,7 +94,12 @@ export async function enrichResourceWithCatalogInfo(resource: any): Promise<any>
       // 使用第一个关联的教材目录（目前系统设计：一个资源只关联一个教材目录）
       const firstTextbook = textbooks[0];
       if (firstTextbook) {
+        // 在资源对象上直接添加 catalog_id 字段（前端需要）
+        resource.catalog_id = firstTextbook.id;
+        
+        // 同时添加到 catalog_info 中（保持向后兼容）
         resource.catalog_info = {
+          catalog_id: firstTextbook.id, // 添加 catalog_id 字段（前端需要）
           education_level: convertEducationLevelToChinese(firstTextbook.education_level), // 转换为中文显示
           grade: firstTextbook.grade,
           subject: firstTextbook.subject,
@@ -104,10 +109,15 @@ export async function enrichResourceWithCatalogInfo(resource: any): Promise<any>
       }
       // 注意：不再返回 textbooks 字段，避免与 catalog_info 重复
       // 如果未来需要支持一个资源关联多个教材，可以扩展 catalog_info 为数组
+    } else {
+      // 如果没有绑定教材目录，确保 catalog_id 为 null（前端需要）
+      resource.catalog_id = null;
     }
   } catch (error) {
     // 获取教材信息失败不影响主流程，继续返回资源信息
     console.error(`获取资源 ${resource.id} 的教材信息失败:`, error);
+    // 出错时也设置 catalog_id 为 null
+    resource.catalog_id = null;
   }
   return resource;
 }
