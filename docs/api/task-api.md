@@ -250,3 +250,5 @@ async function getMyTasks(): Promise<CatalogTask[]> {
 | `INVALID_CATALOG_ID` | 无效的教材目录ID |
 | `CATALOG_TASKS_TABLE_NOT_FOUND` | 数据库表不存在，需要执行迁移 |
 
+
+

@@ -182,3 +182,5 @@ if (titleInfo.subject && titleInfo.grade) {
 - AI识别功能不成熟，但不影响系统基本使用
 - 需要用户手动输入信息，增加操作成本
 
+
+
