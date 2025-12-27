@@ -29,8 +29,8 @@ Thumbs.db
 logs/
 *.log
 
-# Uploads (optional - 如果不想提交上传的文件)
-# uploads/
+# Uploads (用户上传的文件，不提交到 Git)
+uploads/
 
 # Test coverage
 coverage/
