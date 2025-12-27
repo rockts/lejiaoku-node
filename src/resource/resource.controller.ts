@@ -34,15 +34,17 @@ export const getFullUrl = (request: Request, path: string): string => {
     // 确保路径以 / 开头
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
+    // 根据设计规范，资源详情接口应该返回完整URL
     // 如果配置了返回完整URL（用于直接访问后端的情况）
     // 可以通过环境变量 RESOURCE_URL_MODE=absolute 来控制
-    if (process.env.RESOURCE_URL_MODE === 'absolute') {
+    // 如果设置为 'relative'，则返回相对路径（用于前端代理场景）
+    if (process.env.RESOURCE_URL_MODE !== 'relative') {
         const protocol = request.protocol || 'http';
         const host = request.get('host') || `localhost:${APP_PORT}`;
         return `${protocol}://${host}${normalizedPath}`;
     }
 
-    // 默认返回相对路径（前端通过代理访问静态资源）
+    // 仅在明确设置为 'relative' 时返回相对路径（前端通过代理访问静态资源）
     return normalizedPath;
 };
 
@@ -218,8 +220,11 @@ export const myResources = async (
  * @apiSuccess {Number} download_count 下载次数
  * @apiSuccess {String} auto_meta_status AI识别状态（pending/done/failed）
  * @apiSuccess {Object} [auto_meta_result] AI识别结果（只读，结构可能增强但不破坏兼容）
- * @apiSuccess {Array} [textbooks] 关联的教材信息（仅当资源已关联教材时存在）
  * @apiSuccess {Object} [catalog_info] 教材目录信息（仅当资源已关联教材时存在）
+ * 
+ * @apiNote 注意：
+ * - 不再返回 `textbooks` 字段（已废弃，使用 `catalog_info` 替代）
+ * - `catalog_info` 包含完整的教材目录信息，已优化为前端展示格式
  * @apiSuccess {String} created_at 创建时间
  * @apiSuccess {String} updated_at 更新时间
  * 
@@ -285,9 +290,10 @@ export const show = async (
             resource.cover_url = getFullUrl(request, resource.cover_url);
         }
 
-        // 对于非管理员/编辑/发布者，不返回 status 字段（保持向后兼容）
+        // 对于非管理员/编辑/发布者，不返回 status 和 user_id 字段（保持向后兼容）
         if (!isAdminOrEditor && !isOwner) {
             delete resource.status;
+            delete resource.user_id; // 普通用户接口不应该返回 user_id
         }
 
         // 附加教材信息（如果已绑定）

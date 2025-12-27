@@ -278,6 +278,35 @@ function convertGradeToNumber(grade: string | number): string {
 }
 
 /**
+ * 将学段转换为英文格式（用于匹配 textbook_catalog 表）
+ * 例如："小学" -> "elementary", "初中" -> "middle"
+ * 如果已经是英文格式，直接返回
+ */
+function convertEducationLevelToEnglish(educationLevel: string): string {
+  if (!educationLevel) {
+    return educationLevel;
+  }
+  
+  const levelMap: { [key: string]: string } = {
+    '小学': 'elementary',
+    '初中': 'middle',
+    'elementary': 'elementary',
+    'middle': 'middle',
+  };
+  
+  // 转换为小写后查找
+  const normalized = educationLevel.trim().toLowerCase();
+  const mapped = levelMap[educationLevel] || levelMap[normalized];
+  
+  if (mapped) {
+    return mapped;
+  }
+  
+  // 如果无法转换，返回原值（可能会匹配失败）
+  return educationLevel;
+}
+
+/**
  * 根据 auto_meta_result 绑定资源到教材目录
  * 
  * 功能：
@@ -324,8 +353,11 @@ export const bindResourceToCatalogByAutoMeta = async (resourceId: number): Promi
       return null;
     }
     
-    // 4. 转换 grade 格式（将 "二年级" 转换为 "2"）
+    // 4. 转换格式
+    // 4.1 转换 grade 格式（将 "二年级" 转换为 "2"）
     const gradeNumber = convertGradeToNumber(grade);
+    // 4.2 转换 education_level 格式（将 "小学" 转换为 "elementary"）
+    const educationLevelEnglish = convertEducationLevelToEnglish(education_level);
     
     // 5. 匹配 textbook_catalog 表
     const [catalogData]: any = await connection.promise().query(
@@ -336,12 +368,13 @@ export const bindResourceToCatalogByAutoMeta = async (resourceId: number): Promi
        AND volume = ? 
        AND textbook_version = ?
        LIMIT 1`,
-      [education_level, subject, gradeNumber, volume, textbook_version]
+      [educationLevelEnglish, subject, gradeNumber, volume, textbook_version]
     );
     
     if (!catalogData || !catalogData[0] || !catalogData[0].id) {
       console.log(`[绑定教材目录] 资源 ${resourceId} 未找到匹配的教材目录`, {
         education_level,
+        education_level_converted: educationLevelEnglish,
         subject,
         grade,
         grade_converted: gradeNumber,

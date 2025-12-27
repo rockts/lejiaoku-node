@@ -191,11 +191,36 @@ export const getCatalogStatistics = async () => {
     LEFT JOIN resource_textbook_map m ON m.textbook_catalog_id = c.id
     LEFT JOIN resource r ON r.id = m.resource_id
     GROUP BY c.id, c.subject, c.grade, c.volume, c.textbook_version, c.education_level
-    ORDER BY c.education_level, c.grade, c.subject, c.textbook_version, c.volume
+    ORDER BY 
+      CASE c.education_level 
+        WHEN 'elementary' THEN 1 
+        WHEN 'middle' THEN 2 
+        ELSE 3 
+      END,
+      c.grade, c.subject, c.textbook_version, c.volume
   `;
 
   const [data] = await connection.promise().query(statement);
   const catalogs = data as any[];
+
+  // 将学段从英文转换为中文（用于前端显示）
+  const convertEducationLevelToChinese = (educationLevel: string): string => {
+    if (!educationLevel) {
+      return educationLevel;
+    }
+    
+    const levelMap: { [key: string]: string } = {
+      'elementary': '小学',
+      'middle': '初中',
+      '小学': '小学',
+      '初中': '初中',
+    };
+    
+    const normalized = educationLevel.trim().toLowerCase();
+    const mapped = levelMap[educationLevel] || levelMap[normalized];
+    
+    return mapped || educationLevel;
+  };
 
   // 为每个 catalog 计算质量状态和行动建议
   const catalogsWithQualityAndAction = await Promise.all(
@@ -213,6 +238,7 @@ export const getCatalogStatistics = async () => {
       );
       return {
         ...catalog,
+        education_level: convertEducationLevelToChinese(catalog.education_level), // 转换为中文显示
         quality_state: quality.state,
         quality_reason: quality.reasons,
         action_type: action.action_type,
@@ -221,6 +247,26 @@ export const getCatalogStatistics = async () => {
       };
     }),
   );
+
+  // 确保排序：小学在前，初中在后（防止转换后顺序变化）
+  catalogsWithQualityAndAction.sort((a, b) => {
+    const levelOrder: { [key: string]: number } = {
+      '小学': 1,
+      '初中': 2,
+    };
+    const orderA = levelOrder[a.education_level] || 99;
+    const orderB = levelOrder[b.education_level] || 99;
+    
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    
+    // 如果学段相同，按其他字段排序
+    if (a.grade !== b.grade) return String(a.grade).localeCompare(String(b.grade));
+    if (a.subject !== b.subject) return a.subject.localeCompare(b.subject);
+    if (a.textbook_version !== b.textbook_version) return a.textbook_version.localeCompare(b.textbook_version);
+    return a.volume.localeCompare(b.volume);
+  });
 
   return catalogsWithQualityAndAction;
 };
@@ -306,11 +352,31 @@ export const getCatalogQualityDiagnosis = async (catalogId: number) => {
     quality.reasons,
   );
 
+  // 将学段从英文转换为中文（用于前端显示）
+  const convertEducationLevelToChinese = (educationLevel: string): string => {
+    if (!educationLevel) {
+      return educationLevel;
+    }
+    
+    const levelMap: { [key: string]: string } = {
+      'elementary': '小学',
+      'middle': '初中',
+      '小学': '小学',
+      '初中': '初中',
+    };
+    
+    const normalized = educationLevel.trim().toLowerCase();
+    const mapped = levelMap[educationLevel] || levelMap[normalized];
+    
+    return mapped || educationLevel;
+  };
+
   // 获取 unit 统计
   const unitStatistics = await getCatalogUnitStatistics(catalogId);
 
   return {
     ...catalog,
+    education_level: convertEducationLevelToChinese(catalog.education_level), // 转换为中文显示
     resource_total: stats.resource_total || 0,
     unit_total: stats.unit_total || 0,
     resource_pending_unit: stats.resource_pending_unit || 0,

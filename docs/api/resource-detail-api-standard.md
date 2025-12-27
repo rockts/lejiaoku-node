@@ -78,7 +78,7 @@
 
 | 字段名 | 类型 | 存在条件 | 说明 |
 |--------|------|----------|------|
-| `textbooks` | `array` | 资源已关联教材时 | 关联的教材信息数组 |
+| ~~`textbooks`~~ | ~~`array`~~ | ~~资源已关联教材时~~ | ~~已废弃，使用 `catalog_info` 替代~~ |
 | `catalog_info` | `object` | 资源已关联教材时 | 简化的教材目录信息 |
 
 **`catalog_info` 结构**（当存在时）：
@@ -124,7 +124,7 @@
   - **增强方式**：可能增加新字段，但不会删除或修改现有字段
   - **兼容性**：前端应忽略未知字段，仅使用已知字段
 
-- ⚠️ `textbooks` - 教材信息数组
+- ~~⚠️ `textbooks` - 教材信息数组~~（已废弃，使用 `catalog_info` 替代）
   - **增强方式**：可能增加新字段，但不会删除或修改现有字段
   - **兼容性**：前端应忽略未知字段
 
@@ -270,13 +270,10 @@ const title = resource.title || '未命名资源';
 const description = resource.description || '';
 const subject = resource.subject || '未分类';
 
-// ✅ 推荐：检查扩展字段存在性
-if (resource.textbooks && resource.textbooks.length > 0) {
-  // 使用教材信息
-}
-
+// ✅ 推荐：使用 catalog_info（已优化为前端展示格式）
 if (resource.catalog_info) {
   // 使用教材目录信息
+  const { education_level, grade, subject, textbook_version, volume } = resource.catalog_info;
 }
 
 // ✅ 推荐：安全访问 AI 字段
@@ -326,7 +323,7 @@ interface ResourceDetail {
   } | null;
   
   // 扩展字段
-  textbooks?: Array<any>;
+  // textbooks?: Array<any>; // 已废弃，使用 catalog_info 替代
   catalog_info?: {
     education_level?: string;
     grade?: string;
@@ -360,7 +357,7 @@ interface ResourceDetail {
 ### 7.2 允许的增强
 
 - ✅ **新增可选字段**：可能增加新的可选字段
-- ✅ **扩展对象字段**：`auto_meta_result`、`textbooks`、`catalog_info` 可能增加新字段
+- ✅ **扩展对象字段**：`auto_meta_result`、`catalog_info` 可能增加新字段
 - ✅ **新增状态值**：`status` 和 `auto_meta_status` 可能增加新值（但不会删除现有值）
 
 ### 7.3 破坏性变更
@@ -379,7 +376,7 @@ interface ResourceDetail {
 
 1. **URL 处理**：`file_url` 和 `cover_url` 会自动转换为完整URL，前端无需额外处理
 2. **空值处理**：所有可选字段都可能为 `null`，前端应做空值检查
-3. **扩展字段**：`textbooks` 和 `catalog_info` 仅在资源关联教材时存在
+3. **扩展字段**：`catalog_info` 仅在资源关联教材时存在（已废弃 `textbooks` 字段）
 4. **AI 字段**：`auto_meta_result` 结构可能增强，前端应忽略未知字段
 5. **状态字段**：普通用户接口不返回 `status` 字段（仅返回已审核资源）
 

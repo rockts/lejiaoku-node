@@ -9,6 +9,7 @@ import { enrichResourceWithCatalogInfo } from './resource-helper.service';
 import { getFullUrl } from './resource.controller';
 import { bindResourceToCatalogByAutoMeta } from '../textbook/textbook.service';
 import * as resourceUnitValidationService from './resource-unit-validation.service';
+import { connection } from '../app/database/mysql';
 import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
@@ -147,6 +148,7 @@ export const update = async (
       cover_url,
       unit,
       unit_index,
+      catalog_id, // 教材目录ID（可选，用于绑定教材目录）
     } = request.body;
 
     // 【系统级不变量】教材单元完整性硬约束
@@ -212,7 +214,48 @@ export const update = async (
       throw error; // 重新抛出错误，让错误处理器处理
     }
 
-    // 6. 如果修改了 subject/grade/textbook 等字段，尝试更新 catalog_info
+    // 6. 处理教材目录绑定（如果提供了 catalog_id）
+    if (catalog_id !== undefined && catalog_id !== null && catalog_id !== '') {
+      const catalogIdNum = parseInt(String(catalog_id), 10);
+      if (!isNaN(catalogIdNum)) {
+        try {
+          // 验证教材目录是否存在
+          const [catalogCheck]: any = await connection.promise().query(
+            'SELECT id FROM textbook_catalog WHERE id = ?',
+            [catalogIdNum]
+          );
+          
+          if (!catalogCheck || catalogCheck.length === 0) {
+            console.warn(`⚠️ [更新资源] 教材目录 ${catalogIdNum} 不存在，跳过绑定`);
+          } else {
+            // 绑定资源到教材目录（幂等操作）
+            const bindStatement = `
+              INSERT INTO resource_textbook_map (resource_id, textbook_catalog_id, source)
+              VALUES (?, ?, 'manual')
+              ON DUPLICATE KEY UPDATE 
+                textbook_catalog_id = VALUES(textbook_catalog_id),
+                source = 'manual',
+                updated_at = CURRENT_TIMESTAMP
+            `;
+            
+            await connection.promise().query(bindStatement, [resourceId, catalogIdNum]);
+            console.log(`✅ [更新资源] 已绑定资源 ${resourceId} 到教材目录 ${catalogIdNum}`);
+            
+            // 如果绑定了 catalog，必须确保 unit 不为空
+            const finalUnit = unit !== undefined ? unit : existingResource.unit;
+            if (!finalUnit || (typeof finalUnit === 'string' && finalUnit.trim() === '')) {
+              console.warn(`⚠️ [更新资源] 资源 ${resourceId} 已绑定教材目录，但 unit 为空`);
+              // 这里不强制要求，因为用户可能稍后填写 unit
+            }
+          }
+        } catch (bindError) {
+          console.error(`❌ [更新资源] 绑定教材目录失败:`, bindError);
+          // 绑定失败不影响资源更新，只记录错误
+        }
+      }
+    }
+    
+    // 7. 如果修改了 subject/grade/textbook 等字段，可以尝试自动匹配教材目录
     // 这里暂时不自动更新，因为需要匹配 textbook_catalog 表
     // 如果需要，可以调用 bindResourceToCatalogByAutoMeta 函数
 

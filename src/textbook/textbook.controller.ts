@@ -147,20 +147,151 @@ export const getResourceTextbooks = async (resourceId: number) => {
 /**
  * 获取教材目录列表（骨架）
  */
+/**
+ * 将学段从英文转换为中文（用于前端显示）
+ */
+const convertEducationLevelToChinese = (educationLevel: string): string => {
+  if (!educationLevel || typeof educationLevel !== 'string') {
+    return educationLevel;
+  }
+  
+  const levelMap: { [key: string]: string } = {
+    'elementary': '小学',
+    'middle': '初中',
+    'junior': '初中',
+    '小学': '小学',
+    '初中': '初中',
+  };
+  
+  const trimmed = educationLevel.trim();
+  if (levelMap[trimmed]) {
+    return levelMap[trimmed];
+  }
+  
+  const normalized = trimmed.toLowerCase();
+  return levelMap[normalized] || educationLevel;
+};
+
 export const getTextbookCatalogList = async (
   request: Request,
   response: Response,
   next: NextFunction,
 ) => {
   try {
+    // 获取查询参数
+    const educationLevel = request.query.education_level as string | undefined; // 学段筛选：'elementary' 或 'middle' 或 '小学' 或 '初中'
+    const grade = request.query.grade as string | undefined; // 年级筛选
+    const subject = request.query.subject as string | undefined; // 学科筛选
+    const page = parseInt(request.query.page as string || '1', 10); // 页码，默认第1页
+    const limit = parseInt(request.query.limit as string || '20', 10); // 每页数量，默认20条
+    const offset = (page - 1) * limit;
+
+    // 构建 WHERE 条件
+    const whereConditions: string[] = [];
+    const params: any[] = [];
+
+    if (educationLevel) {
+      // 支持中文和英文两种格式
+      const levelValue = educationLevel === '小学' || educationLevel === 'elementary' 
+        ? 'elementary' 
+        : educationLevel === '初中' || educationLevel === 'middle' 
+        ? 'middle' 
+        : educationLevel;
+      whereConditions.push('education_level = ?');
+      params.push(levelValue);
+    }
+
+    if (grade) {
+      whereConditions.push('grade = ?');
+      params.push(grade);
+    }
+
+    if (subject) {
+      whereConditions.push('subject = ?');
+      params.push(subject);
+    }
+
+    const whereClause = whereConditions.length > 0 
+      ? `WHERE ${whereConditions.join(' AND ')}` 
+      : '';
+
+    // 查询总数
+    const countStatement = `
+      SELECT COUNT(*) as total
+      FROM textbook_catalog
+      ${whereClause}
+    `;
+    const [countResult]: any = await connection.promise().query(countStatement, params);
+    const total = countResult[0]?.total || 0;
+
+    // 查询数据
     const statement = `
       SELECT *
       FROM textbook_catalog
-      ORDER BY education_level, grade, subject, textbook_version, volume
+      ${whereClause}
+      ORDER BY 
+        CASE education_level 
+          WHEN 'elementary' THEN 1 
+          WHEN 'middle' THEN 2 
+          ELSE 3 
+        END,
+        grade, subject, textbook_version, volume
+      LIMIT ? OFFSET ?
     `;
     
-    const [data] = await connection.promise().query(statement);
-    response.send(data);
+    const [data] = await connection.promise().query(statement, [...params, limit, offset]);
+    
+    // 转换 education_level 为中文
+    const catalogs = (data as any[]).map((catalog: any) => {
+      const originalLevel = catalog.education_level;
+      const chineseLevel = convertEducationLevelToChinese(originalLevel);
+      return {
+        ...catalog,
+        education_level: chineseLevel,
+      };
+    });
+    
+    // 确保排序：小学在前，初中在后（防止前端或其他地方重新排序）
+    // 使用稳定的排序逻辑
+    catalogs.sort((a, b) => {
+      // 定义学段排序优先级
+      const getLevelOrder = (level: string | null | undefined): number => {
+        if (!level) return 99;
+        const levelStr = String(level).trim();
+        if (levelStr === '小学' || levelStr === 'elementary') return 1;
+        if (levelStr === '初中' || levelStr === 'middle' || levelStr === 'junior') return 2;
+        return 99;
+      };
+      
+      const orderA = getLevelOrder(a.education_level);
+      const orderB = getLevelOrder(b.education_level);
+      
+      // 首先按学段排序
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // 如果学段相同，按其他字段排序
+      if (a.grade !== b.grade) {
+        const gradeA = String(a.grade || '').padStart(2, '0');
+        const gradeB = String(b.grade || '').padStart(2, '0');
+        return gradeA.localeCompare(gradeB);
+      }
+      if (a.subject !== b.subject) return (a.subject || '').localeCompare(b.subject || '');
+      if (a.textbook_version !== b.textbook_version) return (a.textbook_version || '').localeCompare(b.textbook_version || '');
+      return (a.volume || '').localeCompare(b.volume || '');
+    });
+    
+    // 返回分页结果
+    response.send({
+      data: catalogs,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     next(error);
   }

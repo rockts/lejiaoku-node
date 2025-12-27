@@ -34,6 +34,35 @@ export type CatalogViewState = 'add_resources' | 'organize_units' | 'no_action';
 export type UnitState = 'empty' | 'sparse' | 'healthy';
 
 /**
+ * 将学段从英文转换为中文（用于前端显示）
+ * 例如："elementary" -> "小学", "middle" -> "初中"
+ * 如果已经是中文，直接返回
+ */
+const convertEducationLevelToChinese = (educationLevel: string): string => {
+  if (!educationLevel) {
+    return educationLevel;
+  }
+  
+  const levelMap: { [key: string]: string } = {
+    'elementary': '小学',
+    'middle': '初中',
+    '小学': '小学',
+    '初中': '初中',
+  };
+  
+  // 转换为小写后查找
+  const normalized = educationLevel.trim().toLowerCase();
+  const mapped = levelMap[educationLevel] || levelMap[normalized];
+  
+  if (mapped) {
+    return mapped;
+  }
+  
+  // 如果无法转换，返回原值
+  return educationLevel;
+};
+
+/**
  * 将 action_type 转换为 view_state
  * 前端只关心三种状态：add_resources, organize_units, no_action
  */
@@ -149,7 +178,7 @@ export const getCatalogInfo = async (catalogId: number) => {
     grade: catalog.grade,
     volume: catalog.volume,
     textbook_version: catalog.textbook_version,
-    education_level: catalog.education_level,
+    education_level: convertEducationLevelToChinese(catalog.education_level), // 转换为中文显示
     unit_total: unitTotal,
     resource_total: resourceTotal,
     quality_state: quality.state,

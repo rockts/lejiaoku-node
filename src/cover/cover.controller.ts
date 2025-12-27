@@ -26,6 +26,26 @@ export const store = async (
     'size',
   ]);
 
+  // 修复中文文件名编码问题
+  // multer 接收到的 originalname 可能是 latin1 编码，需要转换为 utf8
+  if (coverInfo.originalname) {
+    try {
+      // 尝试从 latin1 解码到 utf8（处理中文文件名）
+      const originalName = coverInfo.originalname;
+      // 检查是否包含非 ASCII 字符（可能是 latin1 编码的中文）
+      if (/[\x80-\xFF]/.test(originalName)) {
+        try {
+          coverInfo.originalname = Buffer.from(originalName, 'latin1').toString('utf8');
+        } catch (e) {
+          // 解码失败，保持原值
+          console.warn('封面文件名编码转换失败:', e);
+        }
+      }
+    } catch (error) {
+      console.warn('处理封面文件名编码时出错:', error);
+    }
+  }
+
   try {
     // 保存文件信息
     const data = await createCover({

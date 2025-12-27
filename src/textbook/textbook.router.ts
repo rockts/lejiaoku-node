@@ -16,8 +16,11 @@ const router = express.Router();
 
 /**
  * 获取所有教材目录骨架
+ * GET /api/textbook-catalog 或 /api/catalogs
+ * 权限：仅 contributor、editor、admin 可访问
  */
-router.get('/textbook-catalog', getTextbookCatalogList);
+router.get('/textbook-catalog', authGuard, requireRole(['contributor', 'editor', 'admin']), getTextbookCatalogList);
+router.get('/catalogs', authGuard, requireRole(['contributor', 'editor', 'admin']), getTextbookCatalogList); // 别名，方便前端使用
 
 /**
  * 绑定资源与教材目录（手动指定教材目录ID）
@@ -86,33 +89,39 @@ router.get(
 /**
  * 获取 Catalog 基本信息（用于教材目录页）
  * GET /api/catalogs/:catalogId/info
- * 权限：公开（无需登录）
+ * 权限：仅 contributor、editor、admin 可访问
  */
 router.get(
   '/catalogs/:catalogId/info',
+  authGuard,
+  requireRole(['contributor', 'editor', 'admin']),
   catalogInfoController.getCatalogInfo,
 );
 
 /**
  * 获取 Catalog 下的 Unit 列表（用于教材目录页）
  * GET /api/catalogs/:catalogId/units
- * 权限：公开（无需登录）
+ * 权限：仅 contributor、editor、admin 可访问
  */
 router.get(
   '/catalogs/:catalogId/units',
+  authGuard,
+  requireRole(['contributor', 'editor', 'admin']),
   catalogInfoController.getCatalogUnits,
 );
 
 /**
  * 搜索指定 catalog + unit 的资源（第一条被"定死"的教材搜索 SQL）
  * GET /api/catalogs/:catalogId/units/:unit/resources
- * 权限：公开（无需登录）
+ * 权限：仅 contributor、editor、admin 可访问
  * 
  * 场景：用户在"教材目录页"点击某个 unit
  * 搜索条件固定为：subject, grade, textbook_version, unit, status = approved
  */
 router.get(
   '/catalogs/:catalogId/units/:unit/resources',
+  authGuard,
+  requireRole(['contributor', 'editor', 'admin']),
   catalogUnitSearchController.searchResourcesByCatalogUnit,
 );
 

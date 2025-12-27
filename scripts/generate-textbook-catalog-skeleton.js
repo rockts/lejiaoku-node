@@ -38,37 +38,22 @@ const GRADES = {
   middle: ['7', '8', '9']
 };
 
-// 学科定义（基于现有数据 + 常见学科）
+// 学科定义
 const SUBJECTS = [
   '语文',
   '数学',
   '英语',
-  '科学', // 小学科学
+  '科学',
   '道德与法治',
-  '物理', // 初中
-  '化学', // 初中
-  '生物', // 初中
+  '物理',
+  '化学',
+  '生物',
   '历史',
   '地理',
   '音乐',
   '美术',
-  '体育'
+  '书法练习指导'
 ];
-
-// 教材版本定义（主流版本）
-const TEXTBOOK_VERSIONS = [
-  '人教版',
-  '苏教版',
-  '北师大版',
-  '外研版',
-  '沪教版',
-  '冀教版',
-  '浙教版',
-  '湘教版'
-];
-
-// 册别定义
-const VOLUMES = ['上册', '下册'];
 
 // 学科与学段的映射（某些学科只属于特定学段）
 const SUBJECT_EDUCATION_LEVEL_MAP = {
@@ -77,8 +62,71 @@ const SUBJECT_EDUCATION_LEVEL_MAP = {
   '生物': ['middle'],
   '科学': ['elementary'],
   '历史': ['middle'],
-  '地理': ['middle']
+  '地理': ['middle'],
+  '书法练习指导': ['elementary']
 };
+
+// 学科与版本的映射（不同学科有不同的版本）
+const SUBJECT_VERSION_MAP = {
+  // 统一部编版的学科
+  '语文': ['部编版'],
+  '道德与法治': ['部编版'],
+  '历史': ['部编版'],
+  
+  // 数学（小学和初中版本不同）
+  '数学': {
+    elementary: ['人教版', '北师大版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版'],
+    middle: ['人教版', '北师大版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  
+  // 英语（小学和初中版本不同，且小学从3年级开始）
+  '英语': {
+    elementary: ['外研版', '人教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版'],
+    middle: ['外研版', '人教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  
+  // 科学（只有小学）
+  '科学': {
+    elementary: ['人教版', '北师大版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  
+  // 音乐（小学和初中版本不同）
+  '音乐': {
+    elementary: ['人教版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版'],
+    middle: ['人教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  
+  // 美术（小学和初中版本不同）
+  '美术': {
+    elementary: ['人教版', '苏教版', '教科版', '美术出版社', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版'],
+    middle: ['人教版', '教科版', '美术出版社', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  
+  // 书法练习指导（只有小学，只有美术出版社）
+  '书法练习指导': {
+    elementary: ['美术出版社']
+  },
+  
+  // 初中学科版本
+  '物理': {
+    middle: ['人教版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  '化学': {
+    middle: ['人教版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  '生物': {
+    middle: ['人教版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  },
+  '地理': {
+    middle: ['人教版', '苏教版', '教科版', '冀教版', '陕旅版', '上教版', '湘教版', '粤教版']
+  }
+};
+
+// 英语从3年级开始（小学1-2年级没有英语）
+const ENGLISH_START_GRADE = 3;
+
+// 册别定义
+const VOLUMES = ['上册', '下册'];
 
 /**
  * 检查学科是否属于指定学段
@@ -90,6 +138,39 @@ function isSubjectInEducationLevel(subject, educationLevel) {
   }
   // 如果没有限制，则两个学段都有
   return true;
+}
+
+/**
+ * 检查年级是否应该包含该学科
+ * 英语从3年级开始（小学1-2年级没有英语）
+ */
+function shouldIncludeGradeForSubject(subject, educationLevel, grade) {
+  if (subject === '英语' && educationLevel === 'elementary') {
+    const gradeNum = parseInt(grade, 10);
+    return gradeNum >= ENGLISH_START_GRADE;
+  }
+  return true;
+}
+
+/**
+ * 获取学科在指定学段对应的教材版本列表
+ */
+function getVersionsForSubject(subject, educationLevel) {
+  const versionConfig = SUBJECT_VERSION_MAP[subject];
+  
+  // 如果是统一部编版的学科
+  if (Array.isArray(versionConfig)) {
+    return versionConfig;
+  }
+  
+  // 如果是对象（按学段区分）
+  if (versionConfig && typeof versionConfig === 'object') {
+    return versionConfig[educationLevel] || [];
+  }
+  
+  // 如果没有配置，返回空数组（不应该出现）
+  console.warn(`警告：学科 ${subject} 在学段 ${educationLevel} 没有配置版本`);
+  return [];
 }
 
 /**
@@ -108,7 +189,20 @@ function generateCatalogCombinations() {
           return;
         }
 
-        TEXTBOOK_VERSIONS.forEach(version => {
+        // 检查年级是否应该包含该学科（如英语从3年级开始）
+        if (!shouldIncludeGradeForSubject(subject, level.key, grade)) {
+          return;
+        }
+
+        // 获取该学科在当前学段对应的版本列表
+        const versions = getVersionsForSubject(subject, level.key);
+        
+        if (versions.length === 0) {
+          console.warn(`警告：学科 ${subject} 在学段 ${level.key} 年级 ${grade} 没有配置版本，跳过`);
+          return;
+        }
+        
+        versions.forEach(version => {
           VOLUMES.forEach(volume => {
             combinations.push({
               education_level: level.key,

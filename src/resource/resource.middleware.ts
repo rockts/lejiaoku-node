@@ -468,8 +468,27 @@ export const filter = async (
   // 优先级 4: 普通资源列表（无任何条件）
   
   // 检测是否有 catalog 筛选参数
-  const hasCatalogFilter = !!(subject || grade || volume || textbook_version || textbook || catalog_id);
+  // 注意：只有明确指定 catalog_id 或同时有完整的 catalog 组合参数时，才使用 catalog 筛选
+  // 单独的 subject/grade/textbook 参数应该直接按 resource 表字段筛选
+  const hasCatalogId = !!catalog_id;
+  const hasCompleteCatalogParams = !!(subject && grade && volume && (textbook_version || textbook));
+  const hasCatalogFilter = hasCatalogId || hasCompleteCatalogParams;
   const hasUnit = !!unit;
+  
+  // 直接按 resource 表字段筛选（用于首页筛选器，不依赖 catalog 绑定）
+  // 这些筛选条件适用于所有资源，无论是否绑定 catalog
+  if (subject && !hasCatalogFilter) {
+    sql += ' AND resource.subject = ?';
+    params.push(subject);
+  }
+  if (grade && !hasCatalogFilter) {
+    sql += ' AND resource.grade LIKE ?';
+    params.push(`%${grade}%`);
+  }
+  if ((textbook || textbook_version) && !hasCatalogFilter) {
+    sql += ' AND resource.textbook = ?';
+    params.push(textbook_version || textbook);
+  }
   
   // 按单元筛选（只使用 resource.unit 字段，禁止使用 chapter_info 或 auto_meta_result）
   // 【历史废弃路径（DO NOT USE）】：chapter_info LIKE, auto_meta_result.structure 搜索已废弃
@@ -507,7 +526,7 @@ export const filter = async (
       searchMode: 'keyword',
     };
   } else {
-    // 优先级 4: 普通资源列表（无任何条件）
+    // 优先级 4: 普通资源列表（无任何条件，或只有直接字段筛选）
     request.filter = {
       name: 'default',
       sql: sql,
